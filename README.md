@@ -96,7 +96,23 @@ make clean
 
 No dependencies. That is the point.
 
-## Why
+
+## Contributing
+
+Welcome! Do you want to learn and build a transformer in pure C? You are in the right place. 
+We do not use big frameworks, libraries, or automatic tools. Because of this, our code rules are very strict.
+
+### The AI and LLM Rule
+
+We have a strict rule about using AI (like ChatGPT, Claude, or Copilot).
+
+- **BANNED:** Do not use AI (especially agentic or vibe coding) to write the C code. The goal of this project is to learn the math and memory layout yourself. If we see AI-written code, we will close your Pull Request immediately.
+- **ALLOWED:** You can use AI to research math formulas, fix typos, write text documentation, or ask for better code practices (with a deep manual review).
+
+You must also free all the memory you create. Check the roadmap above and open a PR !
+
+
+## Why ?
 
 Because writing `import torch` felt like cheating.
 
