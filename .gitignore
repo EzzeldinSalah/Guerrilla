@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# C Build
+*.o
+*.out
+*.app
+*.a
+*.so
+*.dylib
+
+*.dSYM/
+guerrilla
+
+data/*
+weights/*

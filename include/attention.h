@@ -1,0 +1,18 @@
+#pragma once
+#include "tensor.h"
+
+#define SEQ_LEN    1024
+#define D_MODEL    64
+#define NUM_HEADS  4
+#define NUM_LAYERS 2
+
+typedef struct {
+    int seqLen;
+    int dModel;
+    int heads;
+    int dk;
+    int layers;
+} ModelConfig;
+
+
+Tensor **multiHeadAttention(Tensor *query, Tensor *key, Tensor *value, ModelConfig *modelConfig);
