@@ -1,8 +1,6 @@
 # Guerrilla
 
-A transformer built from scratch in bare-metal C. Training included. No PyTorch. No NumPy. No dependencies. Just C, math, and a dangerous amount of free time.
-
-The goal: a host-based malware detector that learns normal syscall sequences on your machine and flags anything that deviates. No signature matching. No cloud. A small transformer that trains and runs entirely in C, understands process behavior, and tells you when something looks wrong.
+A host-based malware detector that learns normal syscall sequences on your machine and flags anything that deviates. A small transformer that trains and runs entirely in C, understands process behavior, and tells you when something looks wrong.
 
 ## What exists right now
 

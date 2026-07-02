@@ -24,9 +24,6 @@ Tensor* tensorSlice(Tensor *tensor, int colStart, int colEnd) {
 }
 
 Tensor *attention (Tensor *query, Tensor *key, Tensor *value, int dk) {
-    // broski don't:
-    // Tensor *scores = multiply(softmax(scale(multiply(query, transpose(key)), sqrt(dk))), value); -> Memory is getting straight teeth
-
     Tensor *kt = transpose(key);
     Tensor *E = multiply(query, kt);
     tensorFree(kt);

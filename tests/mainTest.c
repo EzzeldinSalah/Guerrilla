@@ -75,6 +75,7 @@ void mainTest () {
 	printf("Q:\n");
     tensorPrint(q);
     Tensor *q_ = layerNormalization(q);
+    printf("Q after layer normalization - ");
     tensorPrint(q_);
 
 	Tensor *k = tensorCreate(rows, cols);
@@ -82,6 +83,7 @@ void mainTest () {
     printf("K\n");
     tensorPrint(k);
     Tensor *k_ = layerNormalization(k);
+    printf("k after layer normalization - ");
     tensorPrint(k_);
 
     Tensor *v = tensorCreate(rows, cols);
@@ -89,6 +91,7 @@ void mainTest () {
     printf("V:\n");
     tensorPrint(v);
     Tensor *v_ = layerNormalization(v);
+    printf("V after layer normalization - ");
     tensorPrint(v_);
 	
 	extern ModelConfig modelConfig;
