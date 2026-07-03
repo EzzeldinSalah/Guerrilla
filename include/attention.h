@@ -16,3 +16,4 @@ typedef struct {
 
 
 Tensor **multiHeadAttention(Tensor *query, Tensor *key, Tensor *value, ModelConfig *modelConfig);
+Tensor *tensorConcat (Tensor **heads, ModelConfig *modelConfig);

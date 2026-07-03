@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g -Iinclude
+CFLAGS = -w -Wall -g -Iinclude
 LIBS = -lm
 
 tensor: src/main.c src/tensor.c src/attention.c tests/mainTest.c

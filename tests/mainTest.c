@@ -100,13 +100,19 @@ void mainTest () {
     
     for (int h = 0; h < modelConfig.heads; h++) {
         printf("Head %d:\n", h + 1);
-        tensorPrint(heads[h]);
-        tensorFree(heads[h]); 
+        tensorPrint(heads[h]);        
     }
+
+    Tensor *concatenatedTensor = tensorConcat(heads, &modelConfig);
+    printf("Concatenated Heads -> ");
+    tensorPrint(concatenatedTensor);
+
+    for (int h = 0; h < modelConfig.heads; h++) tensorFree(heads[h]);
     free(heads);
 
     tensorFree(matrix1); tensorFree(matrix2); tensorFree(matrix3); tensorFree(matrix4);
     tensorFree(matrix5); tensorFree(matrix6); tensorFree(matrix7); tensorFree(matrix8);
     tensorFree(q); tensorFree(k); tensorFree(v);
     tensorFree(q_); tensorFree(k_); tensorFree(v_);
+    tensorFree(concatenatedTensor);
 }

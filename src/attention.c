@@ -1,5 +1,6 @@
 #include <math.h>
 #include<stdlib.h>
+#include<stdio.h>
 #include "../include/tensor.h"
 #include "../include/attention.h"
 
@@ -11,7 +12,7 @@ ModelConfig modelConfig = {
     .layers = NUM_LAYERS
 };
 
-Tensor* tensorSlice(Tensor *tensor, int colStart, int colEnd) {
+Tensor* tensorSlice (Tensor *tensor, int colStart, int colEnd) {
     int numCols = colEnd - colStart;
     Tensor *slice = tensorCreate(tensor->rows, numCols);
 
@@ -54,4 +55,30 @@ Tensor **multiHeadAttention (Tensor *query, Tensor *key, Tensor *value, ModelCon
     }
 
     return heads;
+}
+
+
+Tensor *tensorConcat (Tensor **heads, ModelConfig *modelConfig) {
+    if (!heads[0]) {
+        for (int h = 0; h < modelConfig->heads; h++)
+            tensorFree(heads[h]);
+        free(heads);
+        return NULL;
+    }
+    
+    Tensor *result = tensorCreate(heads[0]->rows, heads[0]->cols * modelConfig->heads);
+
+    for (int h = 0; h < modelConfig->heads; h++) {
+        if (!heads[h]) {
+            printf("WARNING: head number %d is a NULL, the program will continue and skip concatenating it", h + 1);
+            continue;
+        }
+
+        int hCols = heads[h]->cols;
+        for (int i = 0; i < result->rows; i++)
+		    for (int j = 0; j < hCols; j++)
+                result->data[i * result->cols +  h * heads[h]->cols + j] = heads[h]->data[i * heads[h]->cols + j];
+    }                                                                                                                          
+
+    return result;
 }
