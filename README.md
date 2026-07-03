@@ -43,7 +43,7 @@ Guerrilla/
 - [x] Tensor library
 - [x] Single-head attention
 - [x] Multi-head attention
-- [ ] tensorConcat = stitch head outputs back together
+- [x] tensorConcat = stitch head outputs back together
 - [ ] Feedforward block = two linear layers with leaky ReLU
 - [ ] Full encoder block = layernorm + attention + residual + layernorm + feedforward + residual
 - [ ] Stack N encoder blocks
