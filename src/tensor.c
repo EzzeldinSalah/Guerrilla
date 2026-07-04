@@ -55,6 +55,21 @@ Tensor *add (Tensor *matrix1, Tensor *matrix2) {
 	return MatrixSum;
 }
 
+Tensor *addBias(Tensor *matrix, Tensor *bias) {
+    if (bias->rows != 1 || matrix->cols != bias->cols) {
+        printf("Bias must be shape (1, %d) to match matrix columns !\n", matrix->cols);
+        return NULL;
+    }
+
+    Tensor *result = tensorCreate(matrix->rows, matrix->cols);
+
+    for (int i = 0; i < matrix->rows; i++) 
+        for (int j = 0; j < matrix->cols; j++)
+            result->data[i * matrix->cols + j] = matrix->data[i * matrix->cols + j] + bias->data[j];
+
+    return result;
+}
+
 Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 	if (matrix1->cols != matrix2->rows) {
 		printf("To multiply two matrices, matrix1->cols has to equal matrix2->rows\n");

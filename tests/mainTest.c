@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../include/tensor.h"
 #include "../include/attention.h"
+#include "../include/forward.h"
 
 void mainTest () {
     float weights1[] = {
@@ -109,6 +110,36 @@ void mainTest () {
 
     for (int h = 0; h < modelConfig.heads; h++) tensorFree(heads[h]);
     free(heads);
+
+
+    EncoderLayer layer;
+    layer.W_Q = tensorCreate(D_MODEL, D_MODEL);
+    layer.W_K = tensorCreate(D_MODEL, D_MODEL);
+    layer.W_V = tensorCreate(D_MODEL, D_MODEL);
+    layer.W_O = tensorCreate(D_MODEL, D_MODEL);
+    layer.W1  = tensorCreate(D_MODEL, D_MODEL * 4);
+    layer.W2  = tensorCreate(D_MODEL * 4, D_MODEL);
+    layer.B1  = tensorCreate(1, D_MODEL * 4);
+    layer.B2  = tensorCreate(1, D_MODEL);
+
+    for (int i = 0; i < D_MODEL * D_MODEL; i++) {
+        layer.W_Q->data[i] = (float)rand() / RAND_MAX;
+        layer.W_K->data[i] = (float)rand() / RAND_MAX;
+        layer.W_V->data[i] = (float)rand() / RAND_MAX;
+        layer.W_O->data[i] = (float)rand() / RAND_MAX;
+    }
+    for (int i = 0; i < D_MODEL * D_MODEL * modelConfig.heads; i++) layer.W1->data[i] = (float)rand() / RAND_MAX;
+    for (int i = 0; i < D_MODEL * D_MODEL * modelConfig.heads; i++) layer.W2->data[i] = (float)rand() / RAND_MAX;
+    for (int i = 0; i < D_MODEL * modelConfig.heads; i++) layer.B1->data[i] = 0.0f;
+    for (int i = 0; i < D_MODEL; i++) layer.B2->data[i] = 0.0f;
+
+    Tensor *encoderOut = encoderLayerForward(q_, &layer, &modelConfig);
+    printf("Encoder output ->\n");
+    tensorPrint(encoderOut);
+    
+    tensorFree(encoderOut);
+    tensorFree(layer.W_Q); tensorFree(layer.W_K); tensorFree(layer.W_V); tensorFree(layer.W_O);
+    tensorFree(layer.W1); tensorFree(layer.W2); tensorFree(layer.B1); tensorFree(layer.B2);
 
     tensorFree(matrix1); tensorFree(matrix2); tensorFree(matrix3); tensorFree(matrix4);
     tensorFree(matrix5); tensorFree(matrix6); tensorFree(matrix7); tensorFree(matrix8);

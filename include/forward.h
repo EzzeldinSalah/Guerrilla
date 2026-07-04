@@ -13,4 +13,5 @@ typedef struct {
     Tensor *B2;
 } EncoderLayer;
 
-Tensor *feedForward (Tensor *input, Tensor *W1, Tensor *W2, Tensor *B1, Tensor *B2, ModelConfig *modelConfig);
+Tensor *feedForward(Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2);
+Tensor *encoderLayerForward(Tensor *input, EncoderLayer *layer, ModelConfig *modelConfig);

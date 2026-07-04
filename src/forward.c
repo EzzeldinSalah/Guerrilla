@@ -4,11 +4,28 @@
 #include "../include/attention.h"
 #include "../include/forward.h"
 
-Tensor *encoderLayerForward (Tensor *input, EncoderLayer *layer, ModelConfig *modelConfig) {
+Tensor *feedForward(Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2) {
+    Tensor *theta = multiply(x, W1);
+    Tensor *h = addBias(theta, B1);
+    tensorFree(theta);
+
+    Tensor *leakyH = leakyRelu(h, 0.01);
+    tensorFree(h);
+
+    Tensor *beta = multiply(leakyH, W2);
+    tensorFree(leakyH);
+
+    Tensor *FFN = addBias(beta, B2);
+    tensorFree(beta);
+
+    return FFN;
+}
+
+Tensor *encoderLayerForward(Tensor *input, EncoderLayer *layer, ModelConfig *modelConfig) {
     Tensor *Q = multiply(input, layer->W_Q), *K = multiply(input, layer->W_K), *V = multiply(input, layer->W_V);
 
     Tensor **heads = multiHeadAttention(Q, K, V, modelConfig);
-    tensorFree(Q), tensorFree(K), tensorFree(V);
+    tensorFree(Q); tensorFree(K); tensorFree(V);
 
     Tensor *concatenatedHeads = tensorConcat(heads, modelConfig);
     for (int h = 0; h < modelConfig->heads; h++) tensorFree(heads[h]);
@@ -23,21 +40,10 @@ Tensor *encoderLayerForward (Tensor *input, EncoderLayer *layer, ModelConfig *mo
     Tensor *x = layerNormalization(firstResidualConnection);
     tensorFree(firstResidualConnection);
 
-    Tensor *theta = multiply(x, layer->W1);
-    Tensor *h = add(theta, layer->B1);
-    tensorFree(theta);
+    Tensor *ffnOut = feedForward(x, layer->W1, layer->B1, layer->W2, layer->B2);
 
-    Tensor *leakyH = leakyRelu(h, 0.01);
-    tensorFree(h);
-
-    Tensor *beta = multiply(leakyH, layer->W2);
-    tensorFree(leakyH);
-
-    Tensor *FFN = add(beta, layer->B2);
-    tensorFree(beta);
-
-    Tensor *y = add(x, FFN);
-    tensorFree(x), tensorFree(FFN);
+    Tensor *y = add(x, ffnOut);
+    tensorFree(x); tensorFree(ffnOut);
 
     Tensor *output = layerNormalization(y);
     tensorFree(y);

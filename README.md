@@ -44,8 +44,8 @@ Guerrilla/
 - [x] Single-head attention
 - [x] Multi-head attention
 - [x] tensorConcat = stitch head outputs back together
-- [ ] Feedforward block = two linear layers with leaky ReLU
-- [ ] Full encoder block = layernorm + attention + residual + layernorm + feedforward + residual
+- [x] Feedforward block = two linear layers with leaky ReLU
+- [x] Full encoder block = layernorm + attention + residual + layernorm + feedforward + residual
 - [ ] Stack N encoder blocks
 - [ ] Classification head = linear + softmax
 
