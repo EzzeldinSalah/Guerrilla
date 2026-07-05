@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "../include/tensor.h"
 #include "../include/attention.h"
-#include "../include/forward.h"
+#include "../include/encoder.h"
 
 void mainTest () {
     float weights1[] = {
@@ -136,7 +136,7 @@ void mainTest () {
     Tensor *encoderOut = encoderLayerForward(q_, &layer, &modelConfig);
     printf("Encoder output ->\n");
     tensorPrint(encoderOut);
-    
+
     tensorFree(encoderOut);
     tensorFree(layer.W_Q); tensorFree(layer.W_K); tensorFree(layer.W_V); tensorFree(layer.W_O);
     tensorFree(layer.W1); tensorFree(layer.W2); tensorFree(layer.B1); tensorFree(layer.B2);

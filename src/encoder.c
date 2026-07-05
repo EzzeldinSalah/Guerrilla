@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "../include/tensor.h"
 #include "../include/attention.h"
-#include "../include/forward.h"
+#include "../include/encoder.h"
 
 Tensor *feedForward(Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2) {
     Tensor *theta = multiply(x, W1);

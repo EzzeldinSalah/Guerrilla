@@ -25,10 +25,12 @@ Guerrilla/
 ├── include/
 │   ├── tensor.h       <- tensor library interface
 │   ├── attention.h    <- transformer components + ModelConfig
+│   ├── encoder.h      <- FFN & encoder layer interfaces
 │   └── mainTest.h
 ├── src/
 │   ├── tensor.c       <- all math primitives
 │   ├── attention.c    <- attention, multi-head attention, slicing
+│   ├── encoder.c      <- FFN & encoder layer forward pass logic
 │   └── main.c
 ├── tests/
 │   └── mainTest.c
