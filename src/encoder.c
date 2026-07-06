@@ -50,3 +50,14 @@ Tensor *encoderLayerForward(Tensor *input, EncoderLayer *layer, ModelConfig *mod
 
     return output;
 }
+
+
+Tensor *encoderStack(Tensor *input, Transformer *transformer, int numLayers, ModelConfig *modelConfig) {
+    Tensor *current = input;
+    for (int i = 0; i < numLayers; i++) {
+        Tensor *next = encoderLayerForward(current, &transformer->layers[i], modelConfig);
+        if (i) tensorFree(current);
+        current = next;
+    }
+    return current;
+}
