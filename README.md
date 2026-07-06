@@ -120,4 +120,4 @@ And because the people who built the tools everyone else uses had to understand 
 
 ---
 
-*"No safety rails. No dependencies. Guerrilla treats memory as a flat grid of execution space where efficiency is carved by hand."*
+*"Guerrilla is built on understanding the machine. Infinite freedom begins where abstractions end."*

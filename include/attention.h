@@ -4,7 +4,7 @@
 #define SEQ_LEN    1024
 #define D_MODEL    64
 #define NUM_HEADS  4
-#define NUM_LAYERS 2
+#define NUM_LAYERS 6
 
 typedef struct {
     int seqLen;
