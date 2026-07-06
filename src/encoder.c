@@ -14,7 +14,7 @@ Transformer *transformerCreate(ModelConfig *modelConfig) {
         return NULL;
     }
 
-    int dFF = modelConfig->dModel * modelConfig->heads;
+    int dFF = modelConfig->dModel * 4;
     for (int i = 0; i < modelConfig->layers; i++) {
         transformer->layers[i].W_Q = tensorCreate(modelConfig->dModel, modelConfig->dModel);
         transformer->layers[i].W_K = tensorCreate(modelConfig->dModel, modelConfig->dModel);
