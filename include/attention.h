@@ -10,8 +10,8 @@ typedef struct {
     int seqLen;
     int dModel;
     int heads;
-    int dk;
     int layers;
+    int dk;
 } ModelConfig;
 
 

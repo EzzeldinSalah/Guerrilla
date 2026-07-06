@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "../../include/tensor.h"
 #include "../../include/attention.h"
 #include "../include/testUtils.h"
@@ -15,6 +18,7 @@ void attentionTest() {
     }
 
     Tensor *concat = tensorConcat(heads, &modelConfig);
+    printf("Concatenated Heads:\n");
     tensorPrint(concat);
 
     for (int i = 0; i < modelConfig.heads; i++) tensorFree(heads[i]);

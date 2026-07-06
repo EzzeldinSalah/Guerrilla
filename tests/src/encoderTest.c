@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "../../include/tensor.h"
 #include "../../include/attention.h"
 #include "../../include/encoder.h"
@@ -6,32 +8,27 @@
 extern ModelConfig modelConfig;
 
 void encoderTest() {
-    Tensor *input = tensorCreate(3, D_MODEL);
+    Tensor *input = tensorCreate(3, modelConfig.dModel);
     randomFill(input);
 
-    EncoderLayer layer = {
-        .W_Q = tensorCreate(D_MODEL, D_MODEL),
-        .W_K = tensorCreate(D_MODEL, D_MODEL),
-        .W_V = tensorCreate(D_MODEL, D_MODEL),
-        .W_O = tensorCreate(D_MODEL, D_MODEL),
-        .W1 = tensorCreate(D_MODEL, D_MODEL * NUM_HEADS),
-        .W2 = tensorCreate(D_MODEL * NUM_HEADS, D_MODEL),
-        .B1 = tensorCreate(1, D_MODEL * NUM_HEADS),
-        .B2 = tensorCreate(1, D_MODEL)
-    };
+    Transformer *transformer = transformerCreate(&modelConfig);
+    if (!transformer) {
+        printf("Error: Transformer allocation failed.\n");
+        tensorFree(input);
+        return;
+    }
 
+    for (int i = 0; i < modelConfig.layers; i++) {
+        randomFill(transformer->layers[i].W_Q), randomFill(transformer->layers[i].W_K);
+        randomFill(transformer->layers[i].W_V), randomFill(transformer->layers[i].W_O);
+        randomFill(transformer->layers[i].W1), randomFill(transformer->layers[i].W2);
+        randomFill(transformer->layers[i].B1), randomFill(transformer->layers[i].B2);
+    }
 
-    randomFill(layer.W_Q), randomFill(layer.W_K);
-    randomFill(layer.W_V), randomFill(layer.W_O);
-    randomFill(layer.W1), randomFill(layer.W2);
-    randomFill(layer.B1), randomFill(layer.B2);
-
-    Tensor *output = encoderLayerForward(input, &layer, &modelConfig);
+    Tensor *output = encoderStack(input, transformer, modelConfig.layers, &modelConfig);
+    printf("Encoder Dimensions: %d x %d\n", output->rows, output->cols);
     tensorPrint(output);
 
     tensorFree(input), tensorFree(output);
-
-    tensorFree(layer.W_Q), tensorFree(layer.W_K), tensorFree(layer.W_V), tensorFree(layer.W_O);
-    tensorFree(layer.W1), tensorFree(layer.W2);
-    tensorFree(layer.B1), tensorFree(layer.B2);
+    transformerFree(transformer, &modelConfig);
 }

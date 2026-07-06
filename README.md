@@ -48,7 +48,7 @@ Guerrilla/
 - [x] tensorConcat = stitch head outputs back together
 - [x] Feedforward block = two linear layers with leaky ReLU
 - [x] Full encoder block = layernorm + attention + residual + layernorm + feedforward + residual
-- [ ] Stack N encoder blocks
+- [x] Stack N encoder blocks
 - [ ] Classification head = linear + softmax
 
 **Backward pass and training (all in C):**
