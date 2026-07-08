@@ -49,7 +49,7 @@ Guerrilla/
 - [x] Feedforward block = two linear layers with leaky ReLU
 - [x] Full encoder block = layernorm + attention + residual + layernorm + feedforward + residual
 - [x] Stack N encoder blocks
-- [ ] Classification head = linear + softmax
+- [x] Classification head = linear + softmax
 
 **Backward pass and training (all in C):**
 - [ ] Gradient storage on every tensor
