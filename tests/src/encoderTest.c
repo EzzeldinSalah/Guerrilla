@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../../include/tensor.h"
 #include "../../include/attention.h"
@@ -25,10 +26,26 @@ void encoderTest() {
         randomFill(transformer->layers[i].B1), randomFill(transformer->layers[i].B2);
     }
 
+
+    for (int i = 0; i < transformer->classW->rows * transformer->classW->cols; i++)
+        transformer->classW->data[i] = ((float)rand() / (float)RAND_MAX) * 0.1f;
+    for (int i = 0; i < transformer->classB->cols; i++)
+        transformer->classB->data[i] = 0.0f;
+
     Tensor *output = encoderStack(input, transformer, modelConfig.layers, &modelConfig);
-    printf("Encoder Dimensions: %d x %d\n", output->rows, output->cols);
+    printf("Encoder Dimensions:\n");
     tensorPrint(output);
 
+    printf("Pooled:\n");
+    Tensor *pooled = meanPool(output);
+    tensorPrint(pooled);
+
+    printf("Classes:\n");
+    Tensor *probs = classificationHead(pooled, transformer->classW, transformer->classB);
+    tensorPrint(probs);
+
+
+    tensorFree(pooled), tensorFree(probs);
     tensorFree(input), tensorFree(output);
     transformerFree(transformer, &modelConfig);
 }

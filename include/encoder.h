@@ -15,12 +15,14 @@ typedef struct {
 
 typedef struct {
     EncoderLayer *layers;
-    // final classification layers will live down here
+    int classes; // normal or anomalous
+    Tensor *classW;
+    Tensor *classB;
 } Transformer;
-
-Tensor *feedForward(Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2);
-Tensor *encoderLayerForward(Tensor *input, EncoderLayer *layer, ModelConfig *modelConfig);
-Tensor *encoderStack(Tensor *input, Transformer *transformer, int numLayers, ModelConfig *modelConfig);
 
 Transformer *transformerCreate(ModelConfig *modelConfig);
 void transformerFree(Transformer *transformer, ModelConfig *modelConfig);
+
+Tensor *encoderStack(Tensor *input, Transformer *transformer, int numLayers, ModelConfig *modelConfig);
+Tensor *meanPool(Tensor *input);
+Tensor *classificationHead(Tensor *pooled, Tensor *classW, Tensor *classB);

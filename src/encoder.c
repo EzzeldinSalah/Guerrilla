@@ -27,6 +27,10 @@ Transformer *transformerCreate(ModelConfig *modelConfig) {
         transformer->layers[i].B2 = tensorCreate(1, modelConfig->dModel);
     }
 
+    transformer->classes = 2;
+    transformer->classW = tensorCreate(modelConfig->dModel, transformer->classes);
+    transformer->classB = tensorCreate(1, transformer->classes);
+
     return transformer;
 }
 
@@ -46,6 +50,9 @@ void transformerFree(Transformer *transformer, ModelConfig *modelConfig) {
         }
         free(transformer->layers);
     }
+
+    tensorFree(transformer->classW), tensorFree(transformer->classB);
+
     free(transformer);
 }
 
@@ -105,4 +112,32 @@ Tensor *encoderStack(Tensor *input, Transformer *transformer, int numLayers, Mod
         current = next;
     }
     return current;
+}
+
+
+Tensor *meanPool(Tensor *input) {
+    if (!input) return NULL;
+
+    Tensor *output = tensorCreate(1, input->cols);
+
+    for (int j = 0; j < input->cols; j++) {
+        float tempSum = 0.0f;
+        for (int i = 0; i < input->rows; i++)
+            tempSum += input->data[i * input->cols + j];
+
+        output->data[j] = tempSum / (float)input->rows; 
+    }
+
+    return output;
+}
+
+Tensor *classificationHead(Tensor *pooled, Tensor *classW, Tensor *classB) {
+    Tensor *logits = multiply(pooled, classW);
+    Tensor *biasedLogits = addBias(logits, classB);
+    tensorFree(logits);
+
+    Tensor *prob = softmax(biasedLogits);
+    tensorFree(biasedLogits);
+
+    return prob;
 }
