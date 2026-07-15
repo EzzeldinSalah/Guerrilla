@@ -2,4 +2,4 @@
 
 #include "../../include/tensor.h"
 
-void randomFill(Tensor *tensor);
+void randomDataFill(Tensor *tensor);

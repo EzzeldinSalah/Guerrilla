@@ -20,10 +20,10 @@ void encoderTest() {
     }
 
     for (int i = 0; i < modelConfig.layers; i++) {
-        randomFill(transformer->layers[i].W_Q), randomFill(transformer->layers[i].W_K);
-        randomFill(transformer->layers[i].W_V), randomFill(transformer->layers[i].W_O);
-        randomFill(transformer->layers[i].W1), randomFill(transformer->layers[i].W2);
-        randomFill(transformer->layers[i].B1), randomFill(transformer->layers[i].B2);
+        randomDataFill(transformer->layers[i].W_Q), randomDataFill(transformer->layers[i].W_K);
+        randomDataFill(transformer->layers[i].W_V), randomDataFill(transformer->layers[i].W_O);
+        randomDataFill(transformer->layers[i].W1), randomDataFill(transformer->layers[i].W2);
+        randomDataFill(transformer->layers[i].B1), randomDataFill(transformer->layers[i].B2);
     }
 
 

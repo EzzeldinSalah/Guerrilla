@@ -10,6 +10,7 @@ Tensor *tensorCreate (int rows, int cols) {
 
 	newMatrix->rows = rows, newMatrix->cols = cols;
 	newMatrix->data = malloc(rows * cols * sizeof(float));
+	newMatrix->grad = NULL;
 
 	if (newMatrix->data == NULL) {
 		free(newMatrix);
@@ -19,10 +20,16 @@ Tensor *tensorCreate (int rows, int cols) {
 	return newMatrix;
 }
 
+void tensorRequiresGrad (Tensor *tensor) {
+	if (!tensor->grad)
+		tensor->grad = calloc(tensor->rows * tensor->cols, sizeof(float));
+}
+
 void tensorFree (Tensor *matrix) {
-	if (matrix == NULL) return;
+	if (!matrix) return;
 
 	free(matrix->data);
+	if (matrix->grad) free(matrix->grad);
 	free(matrix);
 }
 

@@ -4,6 +4,7 @@ typedef struct {
     int rows;
     int cols;
     float *data;
+    float *grad;
 } Tensor;
 
 Tensor *tensorCreate (int rows, int cols);
