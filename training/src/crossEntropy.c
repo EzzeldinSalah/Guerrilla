@@ -40,7 +40,7 @@ void multiplyBackwardA(Tensor *A, Tensor *B, Tensor *dC) {
 
 void multiplyBackwardB(Tensor *A, Tensor *B, Tensor *dC) {
 	if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
-        printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
+        printf("multiplyBackwardB: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
         return;
     }
@@ -59,29 +59,21 @@ void multiplyBackwardB(Tensor *A, Tensor *B, Tensor *dC) {
     tensorFree(AT);
 }
 
-
-void addBiasBackward(Tensor *bias, Tensor *dTensor, Tensor *upstream) {
-    if (bias->rows != 1 || bias->cols != upstream->cols ||
-        dTensor->rows != upstream->rows || dTensor->cols != upstream->cols) {
-        printf("addBiasBackward: shape mismatch (bias: %dx%d, dTensor: %dx%d, upstream: %dx%d)\n",
-               bias->rows, bias->cols, dTensor->rows, dTensor->cols, upstream->rows, upstream->cols);
+void addBiasBackward(Tensor *bias, Tensor *upstream) {
+    if (bias->rows != 1 || bias->cols != upstream->cols) {
+        printf("addBiasBackward: shape mismatch (bias: %dx%d, upstream: %dx%d)\n",
+               bias->rows, bias->cols, upstream->rows, upstream->cols);
         return;
     }
 
-	if (!bias->grad) tensorRequiresGrad(bias);
+    if (!bias->grad) tensorRequiresGrad(bias);
 
-    for (int i = 0; i < upstream->rows; i++) {
-        for (int j = 0; j < upstream->cols; j++) {
-            dTensor->data[i * dTensor->cols + j] = upstream->data[i * upstream->cols + j];
+    for (int i = 0; i < upstream->rows; i++)
+        for (int j = 0; j < upstream->cols; j++)
             bias->grad[j] += upstream->data[i * upstream->cols + j];
-        }
-    }
 }
 
 void classificationHeadBackward(Tensor *pooled, Tensor *classW, Tensor *classB, Tensor *dLogits) {
-    Tensor *dLogitsPreBias = tensorCreate(dLogits->rows, dLogits->cols);
-    addBiasBackward(classB, dLogitsPreBias, dLogits);   
-    multiplyBackwardA(pooled, classW, dLogitsPreBias), multiplyBackwardB(pooled, classW, dLogitsPreBias);
-
-    tensorFree(dLogitsPreBias);
+    addBiasBackward(classB, dLogits);   
+    multiplyBackwardA(pooled, classW, dLogits), multiplyBackwardB(pooled, classW, dLogits);
 }

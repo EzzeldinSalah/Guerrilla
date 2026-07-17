@@ -22,21 +22,39 @@ A complete tensor library and the forward pass of a transformer encoder.
 
 ```
 Guerrilla/
-├── include/
-│   ├── tensor.h       <- tensor library interface
-│   ├── attention.h    <- transformer components + ModelConfig
-│   ├── encoder.h      <- FFN & encoder layer interfaces
-│   └── mainTest.h
-├── src/
-│   ├── tensor.c       <- all math primitives
-│   ├── attention.c    <- attention, multi-head attention, slicing
-│   ├── encoder.c      <- FFN & encoder layer forward pass logic
-│   └── main.c
-├── tests/
-│   └── mainTest.c
-├── weights/           <- trained weights live here
-├── data/              <- syscall sequence datasets live here
-└── Makefile
+├── data/                     [syscall sequence datasets live here]
+├── include/                  [core engine headers]
+│   ├── attention.h
+│   ├── encoder.h
+│   ├── mainTest.h
+│   └── tensor.h
+├── src/                      [core engine implementation]
+│   ├── attention.c
+│   ├── encoder.c
+│   ├── main.c
+│   └── tensor.c
+├── tests/                    [modular test suite]
+│   ├── include/
+│   │   ├── attentionTest.h
+│   │   ├── backwardTest.h
+│   │   ├── encoderTest.h
+│   │   ├── tensorTest.h
+│   │   └── testUtils.h
+│   └── src/
+│       ├── attentionTest.c
+│       ├── backwardTest.c
+│       ├── encoderTest.c
+│       ├── mainTest.c
+│       ├── tensorTest.c
+│       └── testUtils.c
+├── training/                 [loss functions & backprop primitives]
+│   ├── include/
+│   │   └── crossEntropy.h
+│   └── src/
+│       └── crossEntropy.c
+├── weights/                  [trained weights live here]
+├── Makefile
+└── README.md
 ```
 
 ## Roadmap

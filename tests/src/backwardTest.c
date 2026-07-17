@@ -12,7 +12,10 @@ void backwardTest() {
     randomDataFill(input);
 
     Transformer *transformer = transformerCreate(&modelConfig);
-    if (!transformer) return;
+    if (!transformer) {
+        tensorFree(input);
+        return;
+    }
 
     for (int i = 0; i < modelConfig.layers; i++) {
         randomDataFill(transformer->layers[i].W_Q), randomDataFill(transformer->layers[i].W_K);
@@ -35,7 +38,6 @@ void backwardTest() {
 
     Tensor *dLogits = tensorCreate(probs->rows, probs->cols);
     crossEntropyBackward(dLogits, probs, 1);
-
     classificationHeadBackward(pooled, transformer->classW, transformer->classB, dLogits);
 
     for (int i = 0; i < transformer->classW->rows * transformer->classW->cols; i++)
@@ -46,7 +48,7 @@ void backwardTest() {
         printf("%f ", transformer->classB->grad[i]);
     printf("\n");
 
-    tensorFree(dLogits), tensorFree(pooled), tensorFree(probs);
+    tensorFree(dLogits); tensorFree(pooled), tensorFree(probs);
     tensorFree(input), tensorFree(output);
     transformerFree(transformer, &modelConfig);
 }
