@@ -18,6 +18,12 @@ void crossEntropyBackward (Tensor *dLogits, Tensor *probs, int trueClass) {
 }
 
 void multiplyBackwardA(Tensor *A, Tensor *B, Tensor *dC) {
+    if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
+        printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
+               A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
+        return;
+    }
+
 	if (!A->grad) {
 		printf("Allocating Gradient Storage ...\n");
 		tensorRequiresGrad(A);
@@ -33,7 +39,13 @@ void multiplyBackwardA(Tensor *A, Tensor *B, Tensor *dC) {
 }
 
 void multiplyBackwardB(Tensor *A, Tensor *B, Tensor *dC) {
-	if (!B->grad) {
+	if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
+        printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
+               A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
+        return;
+    }
+
+    if (!B->grad) {
 		printf("Allocating Gradient Storage ...\n");
 		tensorRequiresGrad(B);
 	}
@@ -49,6 +61,13 @@ void multiplyBackwardB(Tensor *A, Tensor *B, Tensor *dC) {
 
 
 void addBiasBackward(Tensor *bias, Tensor *dTensor, Tensor *upstream) {
+    if (bias->rows != 1 || bias->cols != upstream->cols ||
+        dTensor->rows != upstream->rows || dTensor->cols != upstream->cols) {
+        printf("addBiasBackward: shape mismatch (bias: %dx%d, dTensor: %dx%d, upstream: %dx%d)\n",
+               bias->rows, bias->cols, dTensor->rows, dTensor->cols, upstream->rows, upstream->cols);
+        return;
+    }
+
 	if (!bias->grad) tensorRequiresGrad(bias);
 
     for (int i = 0; i < upstream->rows; i++) {
