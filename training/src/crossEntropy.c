@@ -1,0 +1,68 @@
+#include <math.h>
+#include <stdio.h>
+#include "../../include/tensor.h"
+
+// Since it's 1 x classes
+float crossEntropyLoss(Tensor *probs, int trueClass) {
+    return -logf(probs->data[trueClass] + 1e-7f);
+}
+
+
+void crossEntropyBackward (Tensor *dLogits, Tensor *probs, int trueClass) {
+    for (int i = 0; i < probs->rows; i++) {
+        for (int j = 0; j < probs->cols; j++) {       
+            dLogits->data[i * probs->cols + j] = 
+                probs->data[i * probs->cols + j] - (j == trueClass ? 1.0f : 0.0f);
+        }
+    }
+}
+
+void multiplyBackwardA(Tensor *A, Tensor *B, Tensor *dC) {
+	if (!A->grad) {
+		printf("Allocating Gradient Storage ...\n");
+		tensorRequiresGrad(A);
+	}
+
+    Tensor *BT = transpose(B);
+    for (int i = 0; i < A->rows; i++)
+        for (int j = 0; j < A->cols; j++)
+            for (int k = 0; k < dC->cols; k++)
+                A->grad[i * A->cols + j] += dC->data[i * dC->cols + k] * BT->data[k * BT->cols + j];
+
+    tensorFree(BT);
+}
+
+void multiplyBackwardB(Tensor *A, Tensor *B, Tensor *dC) {
+	if (!B->grad) {
+		printf("Allocating Gradient Storage ...\n");
+		tensorRequiresGrad(B);
+	}
+
+    Tensor *AT = transpose(A);
+    for (int i = 0; i < B->rows; i++)
+        for (int j = 0; j < B->cols; j++)
+            for (int k = 0; k < AT->cols; k++)
+                B->grad[i * B->cols + j] += AT->data[i * AT->cols + k] * dC->data[k * dC->cols + j];
+
+    tensorFree(AT);
+}
+
+
+void addBiasBackward(Tensor *bias, Tensor *dTensor, Tensor *upstream) {
+	if (!bias->grad) tensorRequiresGrad(bias);
+
+    for (int i = 0; i < upstream->rows; i++) {
+        for (int j = 0; j < upstream->cols; j++) {
+            dTensor->data[i * dTensor->cols + j] = upstream->data[i * upstream->cols + j];
+            bias->grad[j] += upstream->data[i * upstream->cols + j];
+        }
+    }
+}
+
+void classificationHeadBackward(Tensor *pooled, Tensor *classW, Tensor *classB, Tensor *dLogits) {
+    Tensor *dLogitsPreBias = tensorCreate(dLogits->rows, dLogits->cols);
+    addBiasBackward(classB, dLogitsPreBias, dLogits);   
+    multiplyBackwardA(pooled, classW, dLogitsPreBias), multiplyBackwardB(pooled, classW, dLogitsPreBias);
+
+    tensorFree(dLogitsPreBias);
+}

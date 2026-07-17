@@ -5,12 +5,14 @@ LIBS = -lm
 SRC_FILES = src/main.c \
             src/tensor.c \
             src/attention.c \
-            src/encoder.c
+            src/encoder.c \
+            training/src/crossEntropy.c
 
 TEST_FILES = tests/src/mainTest.c \
              tests/src/tensorTest.c \
              tests/src/attentionTest.c \
              tests/src/encoderTest.c \
+             tests/src/backwardTest.c \
              tests/src/testUtils.c
 
 guerrilla: $(SRC_FILES) $(TEST_FILES)

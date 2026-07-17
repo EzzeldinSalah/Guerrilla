@@ -20,11 +20,6 @@ Tensor *tensorCreate (int rows, int cols) {
 	return newMatrix;
 }
 
-void tensorRequiresGrad (Tensor *tensor) {
-	if (!tensor->grad)
-		tensor->grad = calloc(tensor->rows * tensor->cols, sizeof(float));
-}
-
 void tensorFree (Tensor *matrix) {
 	if (!matrix) return;
 
@@ -62,7 +57,7 @@ Tensor *add (Tensor *matrix1, Tensor *matrix2) {
 	return MatrixSum;
 }
 
-Tensor *addBias(Tensor *matrix, Tensor *bias) {
+Tensor *addBias (Tensor *matrix, Tensor *bias) {
     if (bias->rows != 1 || matrix->cols != bias->cols) {
         printf("Bias must be shape (1, %d) to match matrix columns !\n", matrix->cols);
         return NULL;
@@ -191,29 +186,7 @@ void tensorPrint (Tensor *matrix) {
 	}
 }
 
-
-/* the point of MotherMatrix was to avoid calling matrix_free manually on every matrix, sounds convenient */
-/* Cost: holds everything until the end actually makes this harder, because I need to free intermediates as I go
-or I'll blow my memory LOL */
-
-// typedef struct {
-// 	Matrix **matrices;
-// 	size_t capacity;
-// 	size_t size;
-// } MotherMatrix;
-
-// MotherMatrix *mother_create () {
-// 	MotherMatrix *mother = malloc(sizeof(MotherMatrix));
-// 	if (mother == NULL) return NULL;
-
-// 	mother->capacity = 10;
-// 	mother->size = 0;
-// 	mother->matrices = malloc(mother->capacity * sizeof(Matrix*));
-
-// 	if (mother->matrices == NULL) {
-// 		free(mother);
-// 		return NULL;
-// 	}
-
-// 	return mother;
-// }
+void tensorRequiresGrad (Tensor *tensor) {
+	if (!tensor->grad)
+		tensor->grad = calloc(tensor->rows * tensor->cols, sizeof(float));
+}

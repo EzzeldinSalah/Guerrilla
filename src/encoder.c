@@ -4,7 +4,7 @@
 #include "../include/attention.h"
 #include "../include/encoder.h"
 
-Transformer *transformerCreate(ModelConfig *modelConfig) {
+Transformer *transformerCreate (ModelConfig *modelConfig) {
     Transformer *transformer = malloc(sizeof(Transformer));
     if (!transformer) return NULL;
 
@@ -34,7 +34,7 @@ Transformer *transformerCreate(ModelConfig *modelConfig) {
     return transformer;
 }
 
-void transformerFree(Transformer *transformer, ModelConfig *modelConfig) {
+void transformerFree (Transformer *transformer, ModelConfig *modelConfig) {
     if (!transformer) return;
 
     if (transformer->layers) {
@@ -56,7 +56,7 @@ void transformerFree(Transformer *transformer, ModelConfig *modelConfig) {
     free(transformer);
 }
 
-Tensor *feedForward(Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2) {
+Tensor *feedForward (Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2) {
     Tensor *theta = multiply(x, W1);
     Tensor *h = addBias(theta, B1);
     tensorFree(theta);
@@ -73,7 +73,7 @@ Tensor *feedForward(Tensor *x, Tensor *W1, Tensor *B1, Tensor *W2, Tensor *B2) {
     return FFN;
 }
 
-Tensor *encoderLayerForward(Tensor *input, EncoderLayer *layer, ModelConfig *modelConfig) {
+Tensor *encoderLayerForward (Tensor *input, EncoderLayer *layer, ModelConfig *modelConfig) {
     Tensor *Q = multiply(input, layer->W_Q), *K = multiply(input, layer->W_K), *V = multiply(input, layer->W_V);
 
     Tensor **heads = multiHeadAttention(Q, K, V, modelConfig);
@@ -104,7 +104,7 @@ Tensor *encoderLayerForward(Tensor *input, EncoderLayer *layer, ModelConfig *mod
 }
 
 
-Tensor *encoderStack(Tensor *input, Transformer *transformer, int numLayers, ModelConfig *modelConfig) {
+Tensor *encoderStack (Tensor *input, Transformer *transformer, int numLayers, ModelConfig *modelConfig) {
     Tensor *current = input;
     for (int i = 0; i < numLayers; i++) {
         Tensor *next = encoderLayerForward(current, &transformer->layers[i], modelConfig);
@@ -115,7 +115,7 @@ Tensor *encoderStack(Tensor *input, Transformer *transformer, int numLayers, Mod
 }
 
 
-Tensor *meanPool(Tensor *input) {
+Tensor *meanPool (Tensor *input) {
     if (!input) return NULL;
 
     Tensor *output = tensorCreate(1, input->cols);
@@ -131,7 +131,7 @@ Tensor *meanPool(Tensor *input) {
     return output;
 }
 
-Tensor *classificationHead(Tensor *pooled, Tensor *classW, Tensor *classB) {
+Tensor *classificationHead (Tensor *pooled, Tensor *classW, Tensor *classB) {
     Tensor *logits = multiply(pooled, classW);
     Tensor *biasedLogits = addBias(logits, classB);
     tensorFree(logits);

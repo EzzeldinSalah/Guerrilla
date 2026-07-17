@@ -8,8 +8,8 @@ typedef struct {
 } Tensor;
 
 Tensor *tensorCreate (int rows, int cols);
-void    tensorFree (Tensor *m);
-void    fill (Tensor *m, float *weights, int len);
+void tensorFree (Tensor *m);
+void fill (Tensor *m, float *weights, int len);
 Tensor *add (Tensor *matrix1, Tensor *matrix2);
 Tensor *addBias(Tensor *matrix, Tensor *bias);
 Tensor *multiply (Tensor *matrix1, Tensor *matrix2);
@@ -20,3 +20,4 @@ Tensor *leakyRelu (Tensor *matrix, float alpha);
 Tensor *relu (Tensor *matrix);
 Tensor *layerNormalization (Tensor *matrix);
 void tensorPrint (Tensor *matrix);
+void tensorRequiresGrad (Tensor *tensor);
