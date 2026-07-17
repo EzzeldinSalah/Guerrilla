@@ -52,12 +52,12 @@ Guerrilla/
 - [x] Classification head = linear + softmax
 
 **Backward pass and training (all in C):**
-- [ ] Gradient storage on every tensor
-- [ ] multiply backward = dA = dC x Bt, dB = At x dC
+- [x] Gradient storage on every tensor
+- [x] multiply backward = dA = dC x Bt, dB = At x dC
 - [ ] softmax backward
 - [ ] layernorm backward
 - [ ] attention backward = chain rule through all four steps
-- [ ] Cross-entropy loss
+- [x] Cross-entropy loss
 - [ ] SGD optimizer
 - [ ] Adam optimizer
 - [ ] Training loop = forward, loss, backward, update
