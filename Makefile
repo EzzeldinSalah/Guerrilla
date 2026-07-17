@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -w -Wall -g -Iinclude -Itests/include
+CFLAGS = -w -Wall -g -O3 -march=native -Wall -Iinclude -Itests/include
 LIBS = -lm
 
 SRC_FILES = src/main.c \

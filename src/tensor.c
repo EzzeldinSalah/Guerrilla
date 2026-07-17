@@ -72,6 +72,7 @@ Tensor *addBias (Tensor *matrix, Tensor *bias) {
     return result;
 }
 
+// significantly outperform the prev one (optimized for CPU cache locality) !
 Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 	if (matrix1->cols != matrix2->rows) {
 		printf("To multiply two matrices, matrix1->cols has to equal matrix2->rows\n");
@@ -81,10 +82,14 @@ Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 	Tensor *matrixDot = tensorCreate(matrix1->rows, matrix2->cols);
 	
 	for (int i = 0; i < matrix1->rows; i++) {
-		for (int j = 0; j < matrix2->cols; j++) {
-			matrixDot->data[i * matrixDot->cols + j] = 0;
-			for (int k = 0; k < matrix2->rows; k++)
-				matrixDot->data[i * matrixDot->cols + j] +=  matrix1->data[i * matrix1->cols + k] * matrix2->data[k * matrix2->cols + j];
+		for (int j = 0; j < matrix2->cols; j++)
+			matrixDot->data[i * matrixDot->cols + j] = 0.0f;
+
+		for (int k = 0; k < matrix1->cols; k++) {
+			float r = matrix1->data[i * matrix1->cols + k];
+			
+			for (int j = 0; j < matrix2->cols; j++)
+				matrixDot->data[i * matrixDot->cols + j] += r * matrix2->data[k * matrix2->cols + j];
 		}
 	}
 
