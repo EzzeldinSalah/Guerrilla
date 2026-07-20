@@ -2,11 +2,52 @@
 #include <stdio.h>
 #include "../../include/tensor.h"
 
-// Since it's 1 x classes
+// fine since it's 1 x classes
 float crossEntropyLoss(Tensor *probs, int trueClass) {
     return -logf(probs->data[trueClass] + 1e-7f);
 }
 
+void layerNormBackward(Tensor *x, Tensor *dy) {
+    if (!x || !dy) return;
+    if (!x->grad) {
+        printf("Allocating Gradient Storage ...\n");
+        tensorRequiresGrad(x);
+    }
+
+    for (int i = 0; i < x->rows; i++) {
+        // int rowOffset = i * cols; -> computed once
+
+        float mean = 0.0f, variance = 0.0f;
+        for (int j = 0; j < x->cols; j++)
+            mean += x->data[i * x->cols + j];
+        mean /= x->cols;
+
+        for (int j = 0; j < x->cols; j++) {
+            float diff = x->data[i * x->cols + j] - mean;
+            variance += diff * diff;
+        }
+        variance /= x->cols;
+
+        float invStd = 1.0f / sqrtf(variance + 1e-5f); // Division is 5x to 10x slower than multiplication
+
+        float meanDy = 0.0f, meanDyY = 0.0f;
+        for (int j = 0; j < x->cols; j++) {
+            float xi = x->data[i * x->cols + j], yi = (xi - mean) * invStd;
+            float dyi = dy->data[i * x->cols + j];
+
+            meanDy += dyi, meanDyY += dyi * yi;
+        }
+        meanDy /= x->cols, meanDyY /= x->cols;
+
+        for (int j = 0; j < x->cols; j++) {
+            float xi = x->data[i * x->cols + j], yi = (xi - mean) * invStd;
+            float dyi = dy->data[i * x->cols + j];
+
+            float grad_val = (dyi - meanDy - yi * meanDyY) * invStd;
+            x->grad[i * x->cols + j] += grad_val;
+        }
+    }
+}
 
 void crossEntropyBackward (Tensor *dLogits, Tensor *probs, int trueClass) {
     for (int i = 0; i < probs->rows; i++) {

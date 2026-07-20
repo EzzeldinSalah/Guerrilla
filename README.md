@@ -73,7 +73,7 @@ Guerrilla/
 - [x] Gradient storage on every tensor
 - [x] multiply backward = dA = dC x Bt, dB = At x dC
 - [ ] softmax backward
-- [ ] layernorm backward
+- [x] layernorm backward
 - [ ] attention backward = chain rule through all four steps
 - [x] Cross-entropy loss
 - [ ] SGD optimizer
