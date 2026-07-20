@@ -49,6 +49,37 @@ void layerNormBackward(Tensor *x, Tensor *dy) {
     }
 }
 
+void softmaxBackward(Tensor *scores, Tensor *A, Tensor *dA) {
+    if (!scores || !A || !dA) return;
+
+    if (scores->rows != A->rows || scores->cols != A->cols ||
+        A->rows != dA->rows || A->cols != dA->cols) {
+        printf("softmaxBackward: shape mismatch (scores: %dx%d, A: %dx%d, dA: %dx%d)\n",
+               scores->rows, scores->cols, A->rows, A->cols, dA->rows, dA->cols);
+
+        return;
+    }
+    
+    if (!scores->grad) {
+        printf("Allocating Gradient Storage ...\n");
+        tensorRequiresGrad(scores);
+    }
+
+
+    for (int i = 0; i <  A->rows; i++) {
+        int offset = i * A->cols;
+
+        float dot = 0.0f;
+        for (int j = 0; j < A->cols; j++)
+            dot += A->data[offset + j] * dA->data[offset + j];
+
+        for (int j = 0; j < A->cols; j++) {
+            float a = A->data[offset + j], da = dA->data[offset + j];
+            scores->grad[offset + j] += a * (da - dot);
+        }
+    }
+}
+
 void crossEntropyBackward (Tensor *dLogits, Tensor *probs, int trueClass) {
     for (int i = 0; i < probs->rows; i++) {
         for (int j = 0; j < probs->cols; j++) {       
@@ -70,6 +101,8 @@ void multiplyBackwardA(Tensor *A, Tensor *B, Tensor *dC) {
 		tensorRequiresGrad(A);
 	}
 
+
+    // huge CPU bottleneck of "malloc" by calling transpose | fix later
     Tensor *BT = transpose(B);
     for (int i = 0; i < A->rows; i++)
         for (int j = 0; j < A->cols; j++)

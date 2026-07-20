@@ -72,7 +72,7 @@ Guerrilla/
 **Backward pass and training (all in C):**
 - [x] Gradient storage on every tensor
 - [x] multiply backward = dA = dC x Bt, dB = At x dC
-- [ ] softmax backward
+- [x] softmax backward
 - [x] layernorm backward
 - [ ] attention backward = chain rule through all four steps
 - [x] Cross-entropy loss
