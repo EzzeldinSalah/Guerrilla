@@ -22,37 +22,53 @@ A complete tensor library and the forward pass of a transformer encoder.
 
 ```
 Guerrilla/
-├── data/                     [syscall sequence datasets live here]
-├── include/                  [core engine headers]
+├── include/
+│   ├── tensor.h
 │   ├── attention.h
 │   ├── encoder.h
-│   ├── mainTest.h
-│   └── tensor.h
-├── src/                      [core engine implementation]
+│   └── mainTest.h
+├── src/
+│   ├── tensor.c
 │   ├── attention.c
 │   ├── encoder.c
-│   ├── main.c
-│   └── tensor.c
-├── tests/                    [modular test suite]
+│   └── main.c
+├── training/
 │   ├── include/
-│   │   ├── attentionTest.h
-│   │   ├── backwardTest.h
-│   │   ├── encoderTest.h
+│   │   ├── tensorBackward.h
+│   │   ├── attentionBackward.h
+│   │   ├── encoderBackward.h
+│   │   ├── lossFunctions.h
+│   │   ├── optimizer.h
+│   │   └── trainLoop.h
+│   └── src/
+│       ├── tensorBackward.c
+│       ├── attentionBackward.c
+│       ├── encoderBackward.c
+│       ├── lossFunctions.c
+│       ├── optimizer.c
+│       └── trainLoop.c
+├── tests/
+│   ├── include/
+│   │   ├── testUtils.h
 │   │   ├── tensorTest.h
-│   │   └── testUtils.h
+│   │   ├── attentionTest.h
+│   │   ├── encoderTest.h
+│   │   ├── tensorBackwardTest.h
+│   │   ├── attentionBackwardTest.h
+│   │   ├── encoderBackwardTest.h
+│   │   └── gradCheckUtils.h
 │   └── src/
-│       ├── attentionTest.c
-│       ├── backwardTest.c
-│       ├── encoderTest.c
 │       ├── mainTest.c
+│       ├── testUtils.c
 │       ├── tensorTest.c
-│       └── testUtils.c
-├── training/                 [loss functions & backprop primitives]
-│   ├── include/
-│   │   └── crossEntropy.h
-│   └── src/
-│       └── crossEntropy.c
-├── weights/                  [trained weights live here]
+│       ├── attentionTest.c
+│       ├── encoderTest.c
+│       ├── tensorBackwardTest.c
+│       ├── attentionBackwardTest.c
+│       ├── encoderBackwardTest.c
+│       └── gradCheckUtils.c
+├── data/
+├── weights/
 ├── Makefile
 └── README.md
 ```
