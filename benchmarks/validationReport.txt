@@ -1,0 +1,19 @@
+C model vs PyTorch on identical weights, one SGD step, lr=0.01
+
+loss          C=0.630277216  PyTorch=0.630277216  diff=4.34e-10  ok
+classW0       C=0.203743994  PyTorch=0.203744009  diff=1.51e-08  ok
+classW3       C=-0.180014461  PyTorch=-0.180014476  diff=1.52e-08  ok
+classB0       C=0.135324448  PyTorch=0.135324448  diff=3.47e-10  ok
+classB1       C=-0.095324434  PyTorch=-0.095324442  diff=7.79e-09  ok
+WQ0           C=0.119999878  PyTorch=0.119999878  diff=1.09e-10  ok
+WK1           C=-0.059999939  PyTorch=-0.059999939  diff=5.43e-11  ok
+WV2           C=-0.159932286  PyTorch=-0.159932286  diff=4.53e-10  ok
+WO3           C=0.219999522  PyTorch=0.219999522  diff=2.93e-11  ok
+W10           C=-0.019920161  PyTorch=-0.019920161  diff=6.07e-12  ok
+W20           C=0.159998655  PyTorch=0.159998655  diff=3.19e-10  ok
+B10           C=-0.080057710  PyTorch=-0.080057710  diff=4.09e-10  ok
+B20           C=0.179864377  PyTorch=0.179864392  diff=1.47e-08  ok
+
+tolerance: 2e-06
+worst drift: classW3 at 1.52e-08
+result: pass

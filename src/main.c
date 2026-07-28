@@ -1,9 +1,11 @@
 #include <stdio.h>
-#include "../include/tensor.h"
-#include "../include/mainTest.h"
-#include "../include/attention.h"
+#include "tensor.h"
+#include "../tests/tests.h"
 
-int main () {
-	mainTest();
-	return 0;
+int main() {
+    tensorTest();
+    attentionTest();
+    encoderTest();
+    backwardTest();
+    return 0;
 }

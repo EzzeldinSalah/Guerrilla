@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../include/tensor.h"
-#include "../../include/attention.h"
-#include "../../include/encoder.h"
-#include "../include/testUtils.h"
+#include "tensor.h"
+#include "attention.h"
+#include "encoder.h"
+#include "../training/lossFunctions.h"
+#include "../training/tensorGrad.h"
+#include "tests.h"
 
 extern ModelConfig modelConfig;
 
 void encoderTest() {
     Tensor *input = tensorCreate(3, modelConfig.dModel);
-    randomFill(input);
+    randomDataFill(input);
 
     Transformer *transformer = transformerCreate(&modelConfig);
     if (!transformer) {
@@ -20,12 +22,19 @@ void encoderTest() {
     }
 
     for (int i = 0; i < modelConfig.layers; i++) {
-        randomFill(transformer->layers[i].W_Q), randomFill(transformer->layers[i].W_K);
-        randomFill(transformer->layers[i].W_V), randomFill(transformer->layers[i].W_O);
-        randomFill(transformer->layers[i].W1), randomFill(transformer->layers[i].W2);
-        randomFill(transformer->layers[i].B1), randomFill(transformer->layers[i].B2);
+        randomDataFill(transformer->layers[i].W_Q), randomDataFill(transformer->layers[i].W_K);
+        randomDataFill(transformer->layers[i].W_V), randomDataFill(transformer->layers[i].W_O);
+        randomDataFill(transformer->layers[i].W1), randomDataFill(transformer->layers[i].W2);
+        randomDataFill(transformer->layers[i].B1), randomDataFill(transformer->layers[i].B2);
+
+
+        tensorRequiresGrad(transformer->layers[i].W_Q), tensorRequiresGrad(transformer->layers[i].W_K);
+        tensorRequiresGrad(transformer->layers[i].W_V), tensorRequiresGrad(transformer->layers[i].W_O);
+        tensorRequiresGrad(transformer->layers[i].W1), tensorRequiresGrad(transformer->layers[i].W2);
+        tensorRequiresGrad(transformer->layers[i].B1), tensorRequiresGrad(transformer->layers[i].B2);
     }
 
+    tensorRequiresGrad(transformer->classW), tensorRequiresGrad(transformer->classB);
 
     for (int i = 0; i < transformer->classW->rows * transformer->classW->cols; i++)
         transformer->classW->data[i] = ((float)rand() / (float)RAND_MAX) * 0.1f;

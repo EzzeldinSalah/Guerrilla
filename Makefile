@@ -1,21 +1,32 @@
 CC = gcc
-CFLAGS = -w -Wall -g -Iinclude -Itests/include
+SRC_DIR = src
+TRAINING_DIR = training
+TEST_DIR = tests
+BUILD_DIR = build
+
+CFLAGS = -Wall -O3 -march=native -Iinclude -I$(TRAINING_DIR) -I$(TEST_DIR)
 LIBS = -lm
 
-SRC_FILES = src/main.c \
-            src/tensor.c \
-            src/attention.c \
-            src/encoder.c
+SRCS = $(wildcard $(SRC_DIR)/*.c) \
+       $(wildcard $(TRAINING_DIR)/*.c) \
+       $(wildcard $(TEST_DIR)/*.c)
 
-TEST_FILES = tests/src/mainTest.c \
-             tests/src/tensorTest.c \
-             tests/src/attentionTest.c \
-             tests/src/encoderTest.c \
-             tests/src/testUtils.c
+TARGET = guerrilla
 
-guerrilla: $(SRC_FILES) $(TEST_FILES)
-	$(CC) $(CFLAGS) $(SRC_FILES) $(TEST_FILES) -o guerrilla $(LIBS)
+all: $(TARGET)
+
+$(TARGET): $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET) $(LIBS)
+
+validate-pytorch:
+	.venv/bin/python3 scripts/validate_against_pytorch.py
+
+bench:
+	.venv/bin/python3 scripts/benchmark_vs_pytorch.py
 
 clean:
-	rm -f guerrilla
-	rm -rf *.dSYM
+	rm -f $(TARGET)
+	rm -rf $(BUILD_DIR)
+	rm -rf *.dSYM *.o
+
+.PHONY: all validate-pytorch bench clean

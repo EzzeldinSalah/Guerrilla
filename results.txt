@@ -66,3 +66,32 @@ Matrix Dimensions: 1 x 64
 Classes:
 Matrix Dimensions: 1 x 2
 	0.531476	0.468524
+classification head gradients
+cross entropy loss: 0.737913
+classW->grad[0]: 0.159183
+classB->grad[0]: 0.521889
+
+sgd optimizer test
+classW delta: -0.001592
+classW grad after zero: 0.000000
+
+adam optimizer test
+classW delta: -0.001000
+
+softmax backward test
+logitsDummy->grad[0]: 0.000300
+
+layerNorm backward test
+output->grad[0]: 0.029251
+
+attention backward test
+dQ[0]: 0.000069
+dK[0]: -0.000028
+dV[0]: 0.021361
+
+Training Loop | Adam | 200 Steps
+step 1 loss: 0.608699
+step 50 loss: 0.000015
+step 100 loss: 0.000012
+step 150 loss: 0.000011
+step 200 loss: 0.000010

@@ -1,15 +1,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../../include/tensor.h"
-#include "../../include/attention.h"
-#include "../include/testUtils.h"
+#include "tensor.h"
+#include "attention.h"
+#include "encoder.h"
+#include "../training/lossFunctions.h"
+#include "../training/tensorGrad.h"
+#include "tests.h"
 
 extern ModelConfig modelConfig;
 
 void attentionTest() {
     Tensor *Q = tensorCreate(3, D_MODEL),  *K = tensorCreate(3, D_MODEL), *V = tensorCreate(3, D_MODEL);
-    randomFill(Q), randomFill(K), randomFill(V);
+    randomDataFill(Q), randomDataFill(K), randomDataFill(V);
 
     Tensor **heads = multiHeadAttention(Q, K, V, &modelConfig);
     for (int i = 0; i < modelConfig.heads; i++) {

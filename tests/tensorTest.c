@@ -1,5 +1,9 @@
-#include "../../include/tensor.h"
-#include "../include/testUtils.h"
+#include "tensor.h"
+#include "attention.h"
+#include "encoder.h"
+#include "../training/lossFunctions.h"
+#include "../training/tensorGrad.h"
+#include "tests.h"
 
 void tensorTest() {
     float weights1[] = {

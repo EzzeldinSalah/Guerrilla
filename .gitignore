@@ -3,7 +3,11 @@
 .AppleDouble
 .LSOverride
 
+# Python venv
+.venv/
+
 # C Build
+build/
 *.o
 *.out
 *.app

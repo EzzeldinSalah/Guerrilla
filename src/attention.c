@@ -1,8 +1,8 @@
 #include <math.h>
 #include<stdlib.h>
 #include<stdio.h>
-#include "../include/tensor.h"
-#include "../include/attention.h"
+#include "tensor.h"
+#include "attention.h"
 
 ModelConfig modelConfig = {
     .seqLen = SEQ_LEN,
@@ -70,7 +70,7 @@ Tensor *tensorConcat (Tensor **heads, ModelConfig *modelConfig) {
 
     for (int h = 0; h < modelConfig->heads; h++) {
         if (!heads[h]) {
-            printf("WARNING: head number %d is a NULL, the program will continue and skip concatenating it", h + 1);
+            printf("WARNING: head number %d is a NULL, the program will continue and skip concatenating it\n", h + 1);
             continue;
         }
 
