@@ -15,5 +15,6 @@ typedef struct {
 } ModelConfig;
 
 
+Tensor* tensorSlice(Tensor *tensor, int colStart, int colEnd);
 Tensor **multiHeadAttention(Tensor *query, Tensor *key, Tensor *value, ModelConfig *modelConfig);
 Tensor *tensorConcat (Tensor **heads, ModelConfig *modelConfig);

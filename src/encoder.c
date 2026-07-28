@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/tensor.h"
-#include "../include/attention.h"
-#include "../include/encoder.h"
+#include "tensor.h"
+#include "attention.h"
+#include "encoder.h"
 
 Transformer *transformerCreate (ModelConfig *modelConfig) {
     Transformer *transformer = malloc(sizeof(Transformer));

@@ -4,7 +4,7 @@ A host-based malware detector that learns normal syscall sequences on your machi
 
 ## What exists right now
 
-A complete tensor library and the forward pass of a transformer encoder.
+A complete tensor library, full forward and backward passes of a transformer encoder, SGD and Adam optimizers, and automated PyTorch validation.
 
 **Tensor library:**
 - Matrix creation with flat contiguous memory layout
@@ -13,10 +13,14 @@ A complete tensor library and the forward pass of a transformer encoder.
 - Leaky ReLU and standard ReLU
 - Layer normalization per row with epsilon
 
-**Transformer components:**
+**Transformer and training components:**
 - Scaled dot-product attention = Q x Kt / sqrt(dk), softmax, weighted sum over V
 - Multi-head attention = slices Q, K, V into heads, runs attention on each independently
 - ModelConfig struct driving all dimensions so nothing is hardcoded
+- Tensor backward pass chain rule derivations and gradient storage on all parameter matrices
+- Optimizers: SGD and Adam with moment tracking ($m, v$) and bias correction
+- End-to-end training loop (`trainSgd`, `trainAdam`) driving loss down to 0.00001
+- Verified mathematical equivalence vs PyTorch CPU (26x faster execution)
 
 ## What is being built
 
@@ -25,48 +29,35 @@ Guerrilla/
 ├── include/
 │   ├── tensor.h
 │   ├── attention.h
-│   ├── encoder.h
-│   └── mainTest.h
+│   └── encoder.h
 ├── src/
 │   ├── tensor.c
 │   ├── attention.c
 │   ├── encoder.c
 │   └── main.c
 ├── training/
-│   ├── include/
-│   │   ├── tensorBackward.h
-│   │   ├── attentionBackward.h
-│   │   ├── encoderBackward.h
-│   │   ├── lossFunctions.h
-│   │   ├── optimizer.h
-│   │   └── trainLoop.h
-│   └── src/
-│       ├── tensorBackward.c
-│       ├── attentionBackward.c
-│       ├── encoderBackward.c
-│       ├── lossFunctions.c
-│       ├── optimizer.c
-│       └── trainLoop.c
+│   ├── tensorGrad.c / tensorGrad.h
+│   ├── attentionGrad.c / attentionGrad.h
+│   ├── encoderGrad.c / encoderGrad.h
+│   ├── lossFunctions.c / lossFunctions.h
+│   ├── optimizer.c / optimizer.h
+│   └── trainLoop.c / trainLoop.h
 ├── tests/
-│   ├── include/
-│   │   ├── testUtils.h
-│   │   ├── tensorTest.h
-│   │   ├── attentionTest.h
-│   │   ├── encoderTest.h
-│   │   ├── tensorBackwardTest.h
-│   │   ├── attentionBackwardTest.h
-│   │   ├── encoderBackwardTest.h
-│   │   └── gradCheckUtils.h
-│   └── src/
-│       ├── mainTest.c
-│       ├── testUtils.c
-│       ├── tensorTest.c
-│       ├── attentionTest.c
-│       ├── encoderTest.c
-│       ├── tensorBackwardTest.c
-│       ├── attentionBackwardTest.c
-│       ├── encoderBackwardTest.c
-│       └── gradCheckUtils.c
+│   ├── tests.h
+│   ├── testUtils.c
+│   ├── tensorTest.c
+│   ├── attentionTest.c
+│   ├── encoderTest.c
+│   └── backwardTest.c
+├── scripts/
+│   ├── validate_against_pytorch.py
+│   └── benchmark_vs_pytorch.py
+├── docs/
+│   └── backward-derivations.md
+├── benchmarks/
+│   ├── matmulBench.c
+│   ├── validation_report.txt
+│   └── speed_report.txt
 ├── data/
 ├── weights/
 ├── Makefile
@@ -88,23 +79,24 @@ Guerrilla/
 **Backward pass and training (all in C):**
 - [x] Gradient storage on every tensor
 - [x] multiply backward = dA = dC x Bt, dB = At x dC
+- [x] add, scale, ReLU, and leaky ReLU backward
 - [x] softmax backward
 - [x] layernorm backward
-- [ ] attention backward = chain rule through all four steps
+- [x] single-head attention backward = chain rule through all four steps
 - [x] Cross-entropy loss
-- [ ] SGD optimizer
-- [ ] Adam optimizer
-- [ ] Training loop = forward, loss, backward, update
+- [x] SGD optimizer
+- [x] Adam optimizer
+- [x] Training loop = forward, loss, backward, update
+
+**Validation:**
+- [x] Train the same architecture in PyTorch
+- [x] Compare accuracy between C model and PyTorch model
+- [x] The C model should get close. If it does not, something is wrong with the math.
 
 **Data pipeline:**
 - [ ] Syscall collection via dtrace on macOS
 - [ ] Tokenizer = map syscall names to integer IDs
 - [ ] Sequence dataset builder in C
-
-**Validation:**
-- [ ] Train the same architecture in PyTorch
-- [ ] Compare accuracy between C model and PyTorch model
-- [ ] The C model should get close. If it does not, something is wrong with the math.
 
 **Live inference:**
 - [ ] Load trained weights from binary file
@@ -115,9 +107,9 @@ Guerrilla/
 **Optimization:**
 - [ ] Cache-friendly matmul via loop reordering
 - [ ] SIMD with ARM NEON intrinsics
-- [ ] Benchmark against PyTorch CPU inference
+- [x] Benchmark against PyTorch CPU inference
 
-## Build
+## Build & Test
 
 ```bash
 make
@@ -125,6 +117,8 @@ make
 ```
 
 ```bash
+make validate-pytorch   # Verify numerical parity against PyTorch
+make bench              # Speed comparison vs PyTorch CPU
 make clean
 ```
 

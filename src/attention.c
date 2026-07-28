@@ -1,8 +1,8 @@
 #include <math.h>
 #include<stdlib.h>
 #include<stdio.h>
-#include "../include/tensor.h"
-#include "../include/attention.h"
+#include "tensor.h"
+#include "attention.h"
 
 ModelConfig modelConfig = {
     .seqLen = SEQ_LEN,

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "../include/tensor.h"
+#include "tensor.h"
 
 #define N 512
 

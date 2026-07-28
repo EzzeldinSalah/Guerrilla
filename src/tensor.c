@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
-#include "../include/tensor.h"
+#include "tensor.h"
 
 Tensor *tensorCreate (int rows, int cols) {
 	Tensor *newMatrix = malloc(sizeof(Tensor));
