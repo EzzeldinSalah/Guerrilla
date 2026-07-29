@@ -23,23 +23,12 @@ void tensorTest() {
     fill(A, weights1, 9), fill(B, weights2, 9);
     tensorPrint(A), tensorPrint(B);
 
-    Tensor *C = add(A, B);
-    tensorPrint(C);
-
-    Tensor *D = multiply(A, B);
-    tensorPrint(D);
-
-    Tensor *E = transpose(D);
-    tensorPrint(E);
-
-    Tensor *F = scale(E, 0.5f);
-    tensorPrint(F);
-
-    Tensor *G = softmax(A);
-    tensorPrint(G);
-
-    Tensor *H = layerNormalization(A);
-    tensorPrint(H);
+    Tensor *C = add(A, B); tensorPrint(C);
+    Tensor *D = multiply(A, B); tensorPrint(D);
+    Tensor *E = transpose(D); tensorPrint(E);
+    Tensor *F = scale(E, 0.5f); tensorPrint(F);
+    Tensor *G = softmax(A); tensorPrint(G);
+    Tensor *H = layerNormalization(A); tensorPrint(H);
 
     tensorFree(A), tensorFree(B), tensorFree(C), tensorFree(D),
     tensorFree(E), tensorFree(F), tensorFree(G), tensorFree(H);

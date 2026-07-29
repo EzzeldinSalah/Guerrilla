@@ -4,8 +4,7 @@
 
 float crossEntropyLoss (Tensor *probs, int trueClass) {
     if (!probs || trueClass < 0 || trueClass >= probs->cols) {
-        printf("crossEntropyLoss: bad class index %d for %d classes\n",
-               trueClass, probs ? probs->cols : 0);
+        printf("crossEntropyLoss: bad class index %d for %d classes\n", trueClass, probs ? probs->cols : 0);
         return 0.0f;
     }
 
@@ -24,13 +23,15 @@ void crossEntropyBackward (Tensor *dLogits, Tensor *probs, int trueClass) {
 
     if (dLogits->rows != probs->rows || dLogits->cols != probs->cols) {
         printf("crossEntropyBackward: shape mismatch (dLogits: %dx%d, probs: %dx%d)\n",
-               dLogits->rows, dLogits->cols, probs->rows, probs->cols);
+            dLogits->rows, dLogits->cols, probs->rows, probs->cols);
+
         return;
     }
 
     if (trueClass < 0 || trueClass >= probs->cols) {
         printf("crossEntropyBackward: bad class index %d for %d classes\n",
                trueClass, probs->cols);
+
         return;
     }
 

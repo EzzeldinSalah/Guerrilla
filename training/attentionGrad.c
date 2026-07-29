@@ -23,9 +23,8 @@ void singleHeadAttentionBackward (Tensor *Q, Tensor *K, Tensor *V, Tensor *dScor
     // dSofted = dScores * V^T
     Tensor *dSofted = tensorCreate(softed->rows, softed->cols);
     multiplyBackwardA(softed, V, dScores);
-    for (int i = 0; i < softed->rows * softed->cols; i++) {
+    for (int i = 0; i < softed->rows * softed->cols; i++)
         dSofted->data[i] = softed->grad[i];
-    }
 
     // 3. Backprop Softmax
     Tensor *dScaled = tensorCreate(scaledScores->rows, scaledScores->cols);

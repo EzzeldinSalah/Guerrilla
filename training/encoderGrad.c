@@ -7,8 +7,7 @@
 
 static void tensorZeroData (Tensor *tensor) {
     int totalSize = tensor->rows * tensor->cols;
-    for (int i = 0; i < totalSize; i++)
-        tensor->data[i] = 0.0f;
+    for (int i = 0; i < totalSize; i++) tensor->data[i] = 0.0f;
 }
 
 static Tensor *tensorCopyData (Tensor *tensor) {

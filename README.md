@@ -1,68 +1,142 @@
 # Guerrilla
 
-A host-based malware detector that learns normal syscall sequences on your machine and flags anything that deviates. A small transformer that trains and runs entirely in C, understands process behavior, and tells you when something looks wrong.
+This project is about building a small transformer from the ground up in pure C. The code keeps the tensor math, the training loop, the backpropagation chain rule, and the validation steps visible instead of hiding them behind a framework.
+
+## Why ?
+
+The reason for doing it this way is simple: the point is to understand how the machine actually behaves. If you can trace the data from input to logits and from loss back to gradients, then the framework stops feeling magical.
+
+This is also why the codebase stays explicit. The tensor shapes, the loop order, the normalization formulas, and the attention derivations are all visible in the source and the docs.
+
+If you are reading this because you want to build something similar, the practical path is to keep the math small, keep the memory layout simple, and verify every step against a known-good reference before adding the next layer.
 
 ## What exists right now
 
-A complete tensor library, full forward and backward passes of a transformer encoder, SGD and Adam optimizers, and automated PyTorch validation.
-
-**Tensor library:**
-- Matrix creation with flat contiguous memory layout
-- Addition, multiplication, transpose, scale
-- Softmax with log-sum-exp numerical stability fix
-- Leaky ReLU and standard ReLU
-- Layer normalization per row with epsilon
-
-**Transformer and training components:**
-- Scaled dot-product attention = Q x Kt / sqrt(dk), softmax, weighted sum over V
-- Multi-head attention = slices Q, K, V into heads, runs attention on each independently
-- ModelConfig struct driving all dimensions so nothing is hardcoded
-- Tensor backward pass chain rule derivations and gradient storage on all parameter matrices
-- Optimizers: SGD and Adam with moment tracking ($m, v$) and bias correction
-- End-to-end training loop (`trainSgd`, `trainAdam`) driving loss down to 0.00001
-- Verified mathematical equivalence vs PyTorch CPU (26x faster execution)
-
-## What is being built
+A complete tensor library, full forward and backward passes of a multi-layer transformer encoder, SGD and Adam optimizers, automated PyTorch mathematical validation, and CPU benchmarking.
 
 ```
 Guerrilla/
 ├── include/
-│   ├── tensor.h
 │   ├── attention.h
-│   └── encoder.h
+│   ├── encoder.h
+│   └── tensor.h
 ├── src/
-│   ├── tensor.c
 │   ├── attention.c
 │   ├── encoder.c
-│   └── main.c
+│   ├── main.c
+│   └── tensor.c
 ├── training/
-│   ├── tensorGrad.c / tensorGrad.h
 │   ├── attentionGrad.c / attentionGrad.h
 │   ├── encoderGrad.c / encoderGrad.h
 │   ├── lossFunctions.c / lossFunctions.h
 │   ├── optimizer.c / optimizer.h
+│   ├── tensorGrad.c / tensorGrad.h
 │   └── trainLoop.c / trainLoop.h
 ├── tests/
-│   ├── tests.h
-│   ├── testUtils.c
-│   ├── tensorTest.c
 │   ├── attentionTest.c
+│   ├── backwardTest.c
 │   ├── encoderTest.c
-│   └── backwardTest.c
+│   ├── tensorTest.c
+│   ├── testUtils.c
+│   └── tests.h
 ├── scripts/
-│   ├── validate_against_pytorch.py
-│   └── benchmark_vs_pytorch.py
+│   ├── benchmark_vs_pytorch.py
+│   └── validate_against_pytorch.py
 ├── docs/
-│   └── backward-derivations.md
+│   ├── benchmarks.md
+│   ├── contributing.md
+│   ├── how-did-i.md
+│   └── math.md
 ├── benchmarks/
 │   ├── matmulBench.c
-│   ├── validation_report.txt
-│   └── speed_report.txt
+│   ├── speed_report.txt
+│   └── validationReport.txt
 ├── data/
 ├── weights/
 ├── Makefile
+├── requirements.txt
 └── README.md
 ```
+
+## Design & Architecture
+
+Guerrilla implements a complete Transformer Encoder stack for sequence classification without external neural network libraries. Every tensor operation, forward activation, gradient accumulation, and optimizer update is executed via explicit C functions operating on contiguous memory blocks.
+
+For complete mathematical derivations, forward equations, and analytical gradient formulas, see [docs/math.md](docs/math.md).
+
+```
+[ Input Tensor (T x D) ]
+           │
+           ▼
+┌─────────────────────────────────────────┐
+│        N-Layer Encoder Stack            │
+│  ┌───────────────────────────────────┐  │
+│  │ Multi-Head Attention              │  │
+│  │ Residual Add + LayerNorm          │  │
+│  │ Feed-Forward Network (LeakyReLU)  │  │
+│  │ Residual Add + LayerNorm          │  │
+│  └───────────────────────────────────┘  │  (x N Layers)
+└─────────────────────────────────────────┘
+           │
+           ▼
+[ Mean Pooling (1 x D) ]
+           │
+           ▼
+[ Classification Head (Linear + Softmax) ] ──► [ Class Probabilities (1 x C) ]
+                                                            │
+                                                            ▼
+                                                    [ Cross-Entropy Loss ]   
+```
+
+### 1. High-Level Forward Pipeline
+
+The forward pipeline transforms sequence tokens into class probabilities through $N$ stacked encoder layers:
+
+1. **Multi-Head Self-Attention:** Projects inputs to $Q, K, V$, slices them into $h$ heads, computes scaled dot-product attention per head, concatenates head outputs, and projects with $W_O$.
+2. **Sub-Layer 1 Normalization:** Adds residual connection and applies row-wise Layer Normalization.
+3. **Feed-Forward Network:** Projects normalized activations through a 2-layer FFN with LeakyReLU ($\alpha = 0.01$).
+4. **Sub-Layer 2 Normalization:** Adds residual connection and applies row-wise Layer Normalization.
+5. **Pooling & Classification:** Averages token vectors across the temporal dimension $T$ (`meanPool`), projects to class logits, and applies Softmax.
+
+### 2. Backpropagation Engine & Caching
+
+Guerrilla performs exact analytical backpropagation without dynamic graph building or autograd tape allocation.
+
+```
+                    BACKWARD FLOW
+  [ dLoss / dLogits ] = (Probabilities - TrueClass) / BatchSize
+           │
+           ▼
+  [ classificationHeadBackward ] ──► Gradients for classW, classB
+           │
+           ▼
+  [ meanPoolBackward ] ────────────► Distributes dPooled across time steps
+           │
+           ▼
+  [ encoderStackBackward ] ────────► Loops backward: Layer N-1 down to Layer 0
+           │
+           ├── Recomputes layer forward activations internally
+           ├── layerNormBackward (computes analytical dLN wrt mean & variance)
+           ├── leakyReluBackward & addBiasBackward (updates W2, B2, W1, B1 grads)
+           ├── layerNormBackward (Sub-layer 1)
+           ├── multiplyBackwardB & multiplyBackwardAData (updates W_O grad)
+           └── singleHeadAttentionBackward (computes dQ, dK, dV & updates W_Q, W_K, W_V grads)
+```
+
+#### Memory Strategy: Caching Inputs & On-Demand Recomputation
+- **Input Caching:** `trainForwardBackward()` caches only the input tensor to each encoder layer in `layerInputs[N+1]`.
+- **Internal Recomputation:** `encoderLayerBackward()` recomputes internal layer forward activations on demand during the backward pass. This eliminates intermediate activation memory overhead across layers.
+
+For step-by-step mathematical proofs and derivative formulas, refer to [docs/math.md](docs/math.md).
+
+### 3. Training Loop & Optimizers
+
+The training loop (`trainSgd` / `trainAdam`) operates in 4 steps per iteration:
+
+1. **Zero Gradients:** `zeroTransformerGrad()` resets all parameter `.grad` buffers to `0.0f`.
+2. **Forward & Loss:** Computes predictions and cross-entropy loss $L = -\ln(\hat{y}_{\text{true}})$.
+3. **Backpropagation:** Executes backward functions to populate `.grad` across all parameter matrices.
+4. **Parameter Update:** Updates parameter buffers (`.data`) using **SGD** or **Adam** (with first/second moment tracking $m_t, v_t$ and bias correction).
 
 ## Roadmap
 
@@ -109,42 +183,22 @@ Guerrilla/
 - [ ] SIMD with ARM NEON intrinsics
 - [x] Benchmark against PyTorch CPU inference
 
-## Build & Test
+## Build & Run
 
 ```bash
+# Build main test binary
 make
 ./guerrilla
-```
 
-```bash
-make validate-pytorch   # Verify numerical parity against PyTorch
-make bench              # Speed comparison vs PyTorch CPU
+# Run automated numerical validation against PyTorch
+make validate-pytorch
+
+# Run CPU speed benchmark vs PyTorch
+make bench
+
+# Clean build artifacts
 make clean
 ```
-
-No dependencies. That is the point.
-
-
-## Contributing
-
-Welcome! Do you want to learn and build a transformer in pure C? You are in the right place. 
-We do not use big frameworks, libraries, or automatic tools. Because of this, our code rules are very strict.
-
-### The AI and LLM Rule
-
-We have a strict rule about using AI (like ChatGPT, Claude, or Copilot).
-
-- **BANNED:** Do not use AI (especially agentic or vibe coding) to write the C code. The goal of this project is to learn the math and memory layout yourself. If we see AI-written code, we will close your Pull Request immediately.
-- **ALLOWED:** You can use AI to research math formulas, fix typos, write text documentation, or ask for better code practices (with a deep manual review).
-
-You must also free all the memory you create. Check the roadmap above and open a PR !
-
-
-## Why ?
-
-Because writing `import torch` felt like cheating.
-
-And because the people who built the tools everyone else uses had to understand what actually happens when you multiply two matrices, how the memory sits, why the loop order matters, what softmax is doing numerically when the values get large. That understanding does not come from calling library functions.
 
 ---
 

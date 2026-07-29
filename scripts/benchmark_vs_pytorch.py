@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
+import argparse
 import math
 import os
 import subprocess
 import sys
 import tempfile
 import time
-import warnings
+from statistics import fmean
 from pathlib import Path
-
-warnings.filterwarnings("ignore", message=".*NumPy.*")
 
 try:
     import torch
@@ -27,7 +25,7 @@ def run(cmd):
 
 def pytorch_benchmark(warmup=10, iterations=1000):
     torch.manual_seed(0)
-    torch.set_num_threads(1)  # Single thread for fair comparison against single-threaded C
+    torch.set_num_threads(1)
 
     seq_len, d_model, heads, dk, d_ff, true_class, lr = 3, 4, 2, 2, 16, 1, 0.01
 
@@ -84,16 +82,11 @@ def pytorch_benchmark(warmup=10, iterations=1000):
     return elapsed
 
 
-def main():
-    warmup = 50
-    iterations = 5000
+def build_c_benchmark(tmp_path, warmup, iterations):
+    bench_src = tmp_path / "bench_c.c"
+    bench_bin = tmp_path / "bench_c"
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        bench_src = tmp_path / "bench_c.c"
-        bench_bin = tmp_path / "bench_c"
-
-        bench_src.write_text(f"""\
+    bench_src.write_text(f"""\
 #include <stdio.h>
 #include <time.h>
 #include "tensor.h"
@@ -135,48 +128,75 @@ int main() {{
 }}
 """)
 
-        sources = [
-            str(bench_src),
-            "src/tensor.c",
-            "src/attention.c",
-            "src/encoder.c",
-            "training/attentionGrad.c",
-            "training/encoderGrad.c",
-            "training/lossFunctions.c",
-            "training/optimizer.c",
-            "training/tensorGrad.c",
-            "training/trainLoop.c",
-        ]
+    sources = [
+        str(bench_src),
+        "src/tensor.c",
+        "src/attention.c",
+        "src/encoder.c",
+        "training/attentionGrad.c",
+        "training/encoderGrad.c",
+        "training/lossFunctions.c",
+        "training/optimizer.c",
+        "training/tensorGrad.c",
+        "training/trainLoop.c",
+    ]
 
-        cc = os.environ.get("CC", "gcc")
-        cmd = [
-            cc,
-            "-Wall",
-            "-O3",
-            "-march=native",
-            "-Iinclude",
-            "-Itraining",
-            *sources,
-            "-o",
-            str(bench_bin),
-            "-lm",
-        ]
-        run(cmd)
+    cc = os.environ.get("CC", "gcc")
+    cmd = [
+        cc,
+        "-Wall",
+        "-O3",
+        "-march=native",
+        "-flto",
+        "-Iinclude",
+        "-Itraining",
+        *sources,
+        "-o",
+        str(bench_bin),
+        "-lm",
+    ]
+    run(cmd)
 
-        out = run([str(bench_bin)]).stdout
-        c_time = float(out.split()[1])
+    return bench_bin
 
-    torch_time = pytorch_benchmark(warmup=warmup, iterations=iterations)
 
-    c_us_per_step = (c_time / iterations) * 1e6
-    torch_us_per_step = (torch_time / iterations) * 1e6
+def run_c_benchmark(bench_bin):
+    out = run([str(bench_bin)]).stdout
+    return float(out.split()[1])
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Compare Guerrilla training speed with PyTorch.")
+    parser.add_argument("--warmup", type=int, default=10, help="Warmup iterations before timing each trial.")
+    parser.add_argument("--iterations", type=int, default=2000, help="Timed iterations per trial.")
+    parser.add_argument("--trials", type=int, default=20, help="Number of independent trials to average.")
+    args = parser.parse_args()
+
+    c_times = []
+    torch_times = []
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        bench_bin = build_c_benchmark(tmp_path, args.warmup, args.iterations)
+
+        for _ in range(args.trials):
+            c_times.append(run_c_benchmark(bench_bin))
+            torch_times.append(pytorch_benchmark(warmup=args.warmup, iterations=args.iterations))
+
+    c_time = fmean(c_times)
+    torch_time = fmean(torch_times)
+
+    c_us_per_step = (c_time / args.iterations) * 1e6
+    torch_us_per_step = (torch_time / args.iterations) * 1e6
     speedup = torch_time / c_time if c_time > 0 else 0
 
     lines = []
-    lines.append(f"Training Step Speed Benchmark ({iterations:,} iterations, single-threaded)")
+    lines.append(
+        f"Training Step Speed Benchmark ({args.trials} trials, {args.iterations:,} iterations per trial, single-threaded)"
+    )
     lines.append("")
-    lines.append(f"C Guerrilla:  {c_time:.4f} sec  ({c_us_per_step:.2f} us/step)")
-    lines.append(f"PyTorch CPU:  {torch_time:.4f} sec  ({torch_us_per_step:.2f} us/step)")
+    lines.append(f"C Guerrilla:  {c_time:.4f} sec avg  ({c_us_per_step:.2f} us/step)")
+    lines.append(f"PyTorch CPU:  {torch_time:.4f} sec avg  ({torch_us_per_step:.2f} us/step)")
     lines.append("")
     if speedup >= 1.0:
         lines.append(f"Winner: C Guerrilla ({speedup:.2f}x faster than PyTorch CPU)")

@@ -7,6 +7,7 @@ void addBackward (Tensor *A, Tensor *B, Tensor *dC) {
         A->rows != dC->rows || A->cols != dC->cols) {
         printf("addBackward: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
+
         return;
     }
 
@@ -22,6 +23,7 @@ void transposeBackward (Tensor *A, Tensor *dC) {
     if (A->rows != dC->cols || A->cols != dC->rows) {
         printf("transposeBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, dC->rows, dC->cols);
+
         return;
     }
 
@@ -36,6 +38,7 @@ void scaleBackward (Tensor *A, Tensor *dC, float scale) {
     if (A->rows != dC->rows || A->cols != dC->cols) {
         printf("scaleBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, dC->rows, dC->cols);
+
         return;
     }
 
@@ -50,6 +53,7 @@ void reluBackward (Tensor *A, Tensor *dC) {
     if (A->rows != dC->rows || A->cols != dC->cols) {
         printf("reluBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, dC->rows, dC->cols);
+
         return;
     }
 
@@ -64,6 +68,7 @@ void leakyReluBackward (Tensor *A, Tensor *dC, float alpha) {
     if (A->rows != dC->rows || A->cols != dC->cols) {
         printf("leakyReluBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, dC->rows, dC->cols);
+
         return;
     }
 
@@ -76,9 +81,7 @@ void leakyReluBackward (Tensor *A, Tensor *dC, float alpha) {
 
 void layerNormBackward (Tensor *x, Tensor *dy) {
     if (!x || !dy) return;
-    if (!x->grad) {
-        tensorRequiresGrad(x);
-    }
+    if (!x->grad) tensorRequiresGrad(x);
 
     for (int i = 0; i < x->rows; i++) {
         // int rowOffset = i * cols; -> computed once
@@ -126,9 +129,7 @@ void softmaxBackward (Tensor *scores, Tensor *A, Tensor *dA) {
         return;
     }
     
-    if (!scores->grad) {
-        tensorRequiresGrad(scores);
-    }
+    if (!scores->grad) tensorRequiresGrad(scores);
 
 
     for (int i = 0; i <  A->rows; i++) {
@@ -150,6 +151,7 @@ void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC) {
     if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
         printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
+
         return;
     }
 

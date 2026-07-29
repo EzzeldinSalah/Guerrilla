@@ -40,6 +40,7 @@ float trainSgd (Transformer *transformer, Tensor *input, int trueClass, ModelCon
     zeroTransformerGrad(transformer, modelConfig);
     float loss = trainForwardBackward(transformer, input, trueClass, modelConfig);
     sgdTransformer(transformer, modelConfig, learningRate);
+    
     return loss;
 }
 
@@ -47,5 +48,6 @@ float trainAdam (Transformer *transformer, Tensor *input, int trueClass, ModelCo
     zeroTransformerGrad(transformer, modelConfig);
     float loss = trainForwardBackward(transformer, input, trueClass, modelConfig);
     adamTransformer(transformer, modelConfig, optimizer);
+
     return loss;
 }

@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
 import math
 import os
 import subprocess
 import sys
 import tempfile
-import warnings
 from pathlib import Path
-
-warnings.filterwarnings("ignore", message=".*NumPy.*")
 
 try:
     import torch

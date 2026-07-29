@@ -27,5 +27,6 @@ void attentionTest() {
     for (int i = 0; i < modelConfig.heads; i++) tensorFree(heads[i]);
     free(heads);
 
-    tensorFree(Q), tensorFree(K), tensorFree(V), tensorFree(concat);
+    tensorFree(Q), tensorFree(K), tensorFree(V);
+    tensorFree(concat);
 }

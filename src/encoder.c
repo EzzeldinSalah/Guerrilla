@@ -111,6 +111,7 @@ Tensor *encoderStack (Tensor *input, Transformer *transformer, int numLayers, Mo
         if (i) tensorFree(current);
         current = next;
     }
+    
     return current;
 }
 
