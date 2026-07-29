@@ -138,6 +138,14 @@ The training loop (`trainSgd` / `trainAdam`) operates in 4 steps per iteration:
 3. **Backpropagation:** Executes backward functions to populate `.grad` across all parameter matrices.
 4. **Parameter Update:** Updates parameter buffers (`.data`) using **SGD** or **Adam** (with first/second moment tracking $m_t, v_t$ and bias correction).
 
+## Benchmarking
+
+Guerrilla includes automated PyTorch comparison and benchmarking scripts stored under `scripts/`. For full benchmarking guidelines, see [docs/benchmarks.md](docs/benchmarks.md).
+
+## Contributing
+
+Welcome. If you want to learn and build a transformer in pure C, this is the right project. For detailed guidelines, see [docs/contributing.md](docs/contributing.md).
+
 ## Roadmap
 
 **Forward pass:**
@@ -186,17 +194,9 @@ The training loop (`trainSgd` / `trainAdam`) operates in 4 steps per iteration:
 ## Build & Run
 
 ```bash
-# Build main test binary
 make
 ./guerrilla
 
-# Run automated numerical validation against PyTorch
-make validate-pytorch
-
-# Run CPU speed benchmark vs PyTorch
-make bench
-
-# Clean build artifacts
 make clean
 ```
 

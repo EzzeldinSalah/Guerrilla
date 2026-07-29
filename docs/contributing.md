@@ -20,4 +20,4 @@ Free every allocation you create. If you change a code path, check that the matc
 - Preserve the existing style of the C codebase.
 - Update tests when behavior changes.
 
-If you open a pull request, include the relevant reasoning for the change and make sure the implementation still matches the derivations in the math docs.
+If you open a pull request, include the reasoning for changes in pull requests and verify that implementation matches derivations in [math.md](math.md).
