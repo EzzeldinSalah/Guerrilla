@@ -2,7 +2,6 @@ CC = gcc
 SRC_DIR = src
 TRAINING_DIR = training
 TEST_DIR = tests
-BUILD_DIR = build
 
 CFLAGS = -Wall -O3 -march=native -Iinclude -I$(TRAINING_DIR) -I$(TEST_DIR)
 LIBS = -lm

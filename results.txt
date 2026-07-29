@@ -66,6 +66,7 @@ Matrix Dimensions: 1 x 64
 Classes:
 Matrix Dimensions: 1 x 2
 	0.531476	0.468524
+
 classification head gradients
 cross entropy loss: 0.737913
 classW->grad[0]: 0.159183
