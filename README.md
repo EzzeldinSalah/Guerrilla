@@ -6,13 +6,9 @@ This project is about building a small transformer from the ground up in pure C.
 
 The reason for doing it this way is simple: the point is to understand how the machine actually behaves. If you can trace the data from input to logits and from loss back to gradients, then the framework stops feeling magical.
 
-This is also why the codebase stays explicit. The tensor shapes, the loop order, the normalization formulas, and the attention derivations are all visible in the source and the docs.
-
 If you are reading this because you want to build something similar, the practical path is to keep the math small, keep the memory layout simple, and verify every step against a known-good reference before adding the next layer.
 
 ## What exists right now
-
-A complete tensor library, full forward and backward passes of a multi-layer transformer encoder, SGD and Adam optimizers, automated PyTorch mathematical validation, and CPU benchmarking.
 
 ```
 Guerrilla/
@@ -92,18 +88,16 @@ For complete mathematical derivations, forward equations, and analytical gradien
 
 The forward pipeline transforms sequence tokens into class probabilities through $N$ stacked encoder layers:
 
-1. **Multi-Head Self-Attention:** Projects inputs to $Q, K, V$, slices them into $h$ heads, computes scaled dot-product attention per head, concatenates head outputs, and projects with $W_O$.
-2. **Sub-Layer 1 Normalization:** Adds residual connection and applies row-wise Layer Normalization.
-3. **Feed-Forward Network:** Projects normalized activations through a 2-layer FFN with LeakyReLU ($\alpha = 0.01$).
-4. **Sub-Layer 2 Normalization:** Adds residual connection and applies row-wise Layer Normalization.
-5. **Pooling & Classification:** Averages token vectors across the temporal dimension $T$ (`meanPool`), projects to class logits, and applies Softmax.
+1. **Encoder ($N$ layers)**: Multi-Head Self-Attention ($Q,K,V$, $h$ heads, scaled dot-product, $W_O$) with residual + LayerNorm.
+2. **FFN**: 2-layer Feed-Forward Network with LeakyReLU ($\alpha=0.01$), followed by residual + LayerNorm.
+3. **Classification**: MeanPool over $T$, project to logits, then apply Softmax.
+
 
 ### 2. Backpropagation Engine & Caching
 
 Guerrilla performs exact analytical backpropagation without dynamic graph building or autograd tape allocation.
 
 ```
-                    BACKWARD FLOW
   [ dLoss / dLogits ] = (Probabilities - TrueClass) / BatchSize
            │
            ▼
@@ -123,10 +117,6 @@ Guerrilla performs exact analytical backpropagation without dynamic graph buildi
            └── singleHeadAttentionBackward (computes dQ, dK, dV & updates W_Q, W_K, W_V grads)
 ```
 
-#### Memory Strategy: Caching Inputs & On-Demand Recomputation
-- **Input Caching:** `trainForwardBackward()` caches only the input tensor to each encoder layer in `layerInputs[N+1]`.
-- **Internal Recomputation:** `encoderLayerBackward()` recomputes internal layer forward activations on demand during the backward pass. This eliminates intermediate activation memory overhead across layers.
-
 For step-by-step mathematical proofs and derivative formulas, refer to [docs/math.md](docs/math.md).
 
 ### 3. Training Loop & Optimizers
@@ -137,6 +127,15 @@ The training loop (`trainSgd` / `trainAdam`) operates in 4 steps per iteration:
 2. **Forward & Loss:** Computes predictions and cross-entropy loss $L = -\ln(\hat{y}_{\text{true}})$.
 3. **Backpropagation:** Executes backward functions to populate `.grad` across all parameter matrices.
 4. **Parameter Update:** Updates parameter buffers (`.data`) using **SGD** or **Adam** (with first/second moment tracking $m_t, v_t$ and bias correction).
+
+## Build & Run
+
+```bash
+make
+./guerrilla
+
+make clean
+```
 
 ## Benchmarking
 
@@ -190,15 +189,6 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 - [ ] Cache-friendly matmul via loop reordering
 - [ ] SIMD with ARM NEON intrinsics
 - [x] Benchmark against PyTorch CPU inference
-
-## Build & Run
-
-```bash
-make
-./guerrilla
-
-make clean
-```
 
 ---
 

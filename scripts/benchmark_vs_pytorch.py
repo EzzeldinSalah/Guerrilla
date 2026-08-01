@@ -16,7 +16,7 @@ except Exception as exc:
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORT = ROOT / "benchmarks" / "speed_report.txt"
+REPORT = ROOT / "benchmarks" / "speedReport.txt"
 
 
 def run(cmd):
