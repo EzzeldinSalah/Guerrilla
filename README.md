@@ -174,6 +174,11 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 - [x] Compare accuracy between C model and PyTorch model
 - [x] The C model should get close. If it does not, something is wrong with the math.
 
+**Optimization:**
+- [ ] Cache-friendly matmul via loop reordering
+- [ ] SIMD with ARM NEON intrinsics
+- [x] Benchmark against PyTorch CPU inference
+
 **Data pipeline:**
 - [ ] Syscall collection via dtrace on macOS
 - [ ] Tokenizer = map syscall names to integer IDs
@@ -184,11 +189,6 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 - [ ] Hook into live syscall stream
 - [ ] Score each process in real time
 - [ ] Flag anomalies above threshold
-
-**Optimization:**
-- [ ] Cache-friendly matmul via loop reordering
-- [ ] SIMD with ARM NEON intrinsics
-- [x] Benchmark against PyTorch CPU inference
 
 ---
 

@@ -292,4 +292,4 @@ $$
 \theta^{(t+1)} = \theta^{(t)} - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t
 $$
 
-*(Default hyperparameter settings: $\eta = 0.01$, $\beta_1 = 0.9$, $\beta_2 = 0.999$, $\epsilon = 10^{-8}$)*
+*(Default hyperparameter settings: eta = 0.01, beta_1 = 0.9, beta_2 = 0.999, epsilon = 10^-8)*
