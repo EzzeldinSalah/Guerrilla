@@ -80,16 +80,26 @@ Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 	}
 
 	Tensor *matrixDot = tensorCreate(matrix1->rows, matrix2->cols);
-	
-	for (int i = 0; i < matrix1->rows; i++) {
-		for (int j = 0; j < matrix2->cols; j++)
-			matrixDot->data[i * matrixDot->cols + j] = 0.0f;
+	for (int i = 0; i < matrixDot->rows * matrixDot->cols; i++) matrixDot->data[i] = 0.0f;
 
-		for (int k = 0; k < matrix1->cols; k++) {
-			float r = matrix1->data[i * matrix1->cols + k];
-			
-			for (int j = 0; j < matrix2->cols; j++)
-				matrixDot->data[i * matrixDot->cols + j] += r * matrix2->data[k * matrix2->cols + j];
+	const int TILE = 32;
+	for (int ii = 0; ii < matrix1->rows; ii += TILE) {
+		for (int kk = 0; kk < matrix1->cols; kk += TILE) {
+			for (int jj = 0; jj < matrix2->cols; jj += TILE) {
+
+				int iEnd = (ii + TILE < matrix1->rows) ? ii + TILE : matrix1->rows;
+				int kEnd = (kk + TILE < matrix1->cols) ? kk + TILE : matrix1->cols;
+				int jEnd = (jj + TILE < matrix2->cols) ? jj + TILE : matrix2->cols;
+
+				for (int i = ii; i < iEnd; i++) {
+					for (int k = kk; k < kEnd; k++) {
+						float r = matrix1->data[i * matrix1->cols + k];
+						for (int j = jj; j < jEnd; j++)
+							matrixDot->data[i * matrixDot->cols + j] += r * matrix2->data[k * matrix2->cols + j];
+					}
+				}
+
+			}
 		}
 	}
 

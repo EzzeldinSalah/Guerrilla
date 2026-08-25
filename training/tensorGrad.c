@@ -151,42 +151,64 @@ void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC) {
     if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
         printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
-
         return;
     }
 
-	if (!A->grad) {
-		tensorRequiresGrad(A);
-	}
+    if (!A->grad) tensorRequiresGrad(A);
 
-    for (int i = 0; i < A->rows; i++)
-        for (int j = 0; j < A->cols; j++) {
-            float tempSum = 0.0f;
-            for (int k = 0; k < dC->cols; k++)
-                tempSum += dC->data[i * dC->cols + k] * B->data[j * B->cols + k];
+    const int TILE = 32;
+    for (int ii = 0; ii < A->rows; ii += TILE) {
+        for (int jj = 0; jj < A->cols; jj += TILE) {
+            for (int kk = 0; kk < dC->cols; kk += TILE) {
 
-            A->grad[i * A->cols + j] += tempSum;
+                int iEnd = (ii + TILE < A->rows) ? ii + TILE : A->rows;
+                int jEnd = (jj + TILE < A->cols) ? jj + TILE : A->cols;
+                int kEnd = (kk + TILE < dC->cols) ? kk + TILE : dC->cols;
+
+                for (int i = ii; i < iEnd; i++) {
+                    for (int j = jj; j < jEnd; j++) {
+                        float tempSum = 0.0f;
+                        for (int k = kk; k < kEnd; k++)
+                            tempSum += dC->data[i * dC->cols + k] * B->data[j * B->cols + k];
+
+                        A->grad[i * A->cols + j] += tempSum;
+                    }
+                }
+
+            }
         }
+    }
 }
 
 void multiplyBackwardB (Tensor *A, Tensor *B, Tensor *dC) {
-	if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
+    if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
         printf("multiplyBackwardB: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
                A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
         return;
     }
 
-    if (!B->grad) {
-		tensorRequiresGrad(B);
-	}
+    if (!B->grad) tensorRequiresGrad(B);
 
-    for (int i = 0; i < A->rows; i++)
-        for (int k = 0; k < A->cols; k++) {
-            float r = A->data[i * A->cols + k];
+    const int TILE = 32;
+    for (int ii = 0; ii < A->rows; ii += TILE) {
+        for (int kk = 0; kk < A->cols; kk += TILE) {
+            for (int jj = 0; jj < B->cols; jj += TILE) {
 
-            for (int j = 0; j < B->cols; j++)
-                B->grad[k * B->cols + j] += r * dC->data[i * dC->cols + j];
+                int iEnd = (ii + TILE < A->rows) ? ii + TILE : A->rows;
+                int kEnd = (kk + TILE < A->cols) ? kk + TILE : A->cols;
+                int jEnd = (jj + TILE < B->cols) ? jj + TILE : B->cols;
+
+                for (int i = ii; i < iEnd; i++) {
+                    for (int k = kk; k < kEnd; k++) {
+                        float r = A->data[i * A->cols + k];
+                        for (int j = jj; j < jEnd; j++)
+                            B->grad[k * B->cols + j] += r * dC->data[i * dC->cols + j];
+                    }
+                }
+
+            }
         }
+    }
 }
 
 void addBiasBackward (Tensor *bias, Tensor *upstream) {
