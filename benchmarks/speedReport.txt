@@ -1,6 +1,7 @@
-Training Step Speed Benchmark (20 trials, 2,000 iterations per trial, single-threaded)
+Training Step Speed Benchmark (3 trials, 10 iterations per trial, single-threaded)
+Config: d_model=64, seq_len=1024, layers=6, heads=8
 
-C Guerrilla:  0.0117 sec avg  (5.83 us/step)
-PyTorch CPU:  0.5336 sec avg  (266.81 us/step)
+C Guerrilla:  15.2780 sec avg  (1527796.47 us/step)
+PyTorch CPU:  1.2163 sec avg  (121631.30 us/step)
 
-Winner: C Guerrilla (45.76x faster than PyTorch CPU)
+Winner: PyTorch CPU (12.56x faster than C Guerrilla)

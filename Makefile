@@ -18,10 +18,10 @@ $(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET) $(LIBS)
 
 validate-pytorch:
-	.venv/bin/python3 scripts/validate_against_pytorch.py
+	@if [ -f .venv/bin/python3 ]; then .venv/bin/python3 scripts/validate_against_pytorch.py; else python3 scripts/validate_against_pytorch.py; fi
 
 bench:
-	.venv/bin/python3 scripts/benchmark_vs_pytorch.py
+	@if [ -f .venv/bin/python3 ]; then .venv/bin/python3 scripts/benchmark_vs_pytorch.py; else python3 scripts/benchmark_vs_pytorch.py; fi
 
 clean:
 	rm -f $(TARGET)
