@@ -192,4 +192,4 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 
 ---
 
-*"Guerrilla is built on understanding the machine. Infinite freedom begins where abstractions end."*
+*"Infinite Freedom Begins Where Abstractions End"*
