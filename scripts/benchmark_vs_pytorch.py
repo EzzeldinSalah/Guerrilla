@@ -1,17 +1,17 @@
-import argparse
+#!/usr/bin/env python3
 import math
 import os
 import subprocess
 import sys
 import tempfile
 import time
-from statistics import fmean
 from pathlib import Path
+from statistics import fmean
 
 try:
     import torch
 except Exception as exc:
-    print("PyTorch is required for benchmark: .venv/bin/python3 -m pip install torch")
+    print("PyTorch is required for benchmark: python3 -m pip install torch")
     sys.exit(2)
 
 
@@ -23,51 +23,76 @@ def run(cmd):
     return subprocess.run(cmd, cwd=ROOT, check=True, text=True, capture_output=True)
 
 
-def pytorch_benchmark(warmup=10, iterations=1000):
+def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=2, iterations=10):
     torch.manual_seed(0)
     torch.set_num_threads(1)
 
-    seq_len, d_model, heads, dk, d_ff, true_class, lr = 3, 4, 2, 2, 16, 1, 0.01
+    true_class = 1
+    lr = 0.01
 
-    W_Q = torch.randn(d_model, d_model, requires_grad=True)
-    W_K = torch.randn(d_model, d_model, requires_grad=True)
-    W_V = torch.randn(d_model, d_model, requires_grad=True)
-    W_O = torch.randn(d_model, d_model, requires_grad=True)
-    W1 = torch.randn(d_model, d_ff, requires_grad=True)
-    W2 = torch.randn(d_ff, d_model, requires_grad=True)
-    B1 = torch.randn(1, d_ff, requires_grad=True)
-    B2 = torch.randn(1, d_model, requires_grad=True)
+    layer_params = []
+    for _ in range(layers):
+        p = {
+            "W_Q": torch.randn(d_model, d_model, requires_grad=True),
+            "W_K": torch.randn(d_model, d_model, requires_grad=True),
+            "W_V": torch.randn(d_model, d_model, requires_grad=True),
+            "W_O": torch.randn(d_model, d_model, requires_grad=True),
+            "W1": torch.randn(d_model, d_ff, requires_grad=True),
+            "W2": torch.randn(d_ff, d_model, requires_grad=True),
+            "B1": torch.randn(1, d_ff, requires_grad=True),
+            "B2": torch.randn(1, d_model, requires_grad=True),
+        }
+        layer_params.append(p)
+
     classW = torch.randn(d_model, 2, requires_grad=True)
     classB = torch.randn(1, 2, requires_grad=True)
-    params = [W_Q, W_K, W_V, W_O, W1, W2, B1, B2, classW, classB]
+
+    all_params = [classW, classB]
+    for lp in layer_params:
+        all_params.extend(lp.values())
 
     x = torch.randn(seq_len, d_model)
 
     def step():
-        Q, K, V = x @ W_Q, x @ W_K, x @ W_V
-        head_outputs = []
+        curr_x = x
         d_head = d_model // heads
-        for h in range(heads):
-            q = Q[:, h * d_head:(h + 1) * d_head]
-            k = K[:, h * d_head:(h + 1) * d_head]
-            v = V[:, h * d_head:(h + 1) * d_head]
-            scores = (q @ k.t()) * (1.0 / math.sqrt(float(dk)))
-            head_outputs.append(torch.softmax(scores, dim=1) @ v)
-        concat = torch.cat(head_outputs, dim=1)
-        att = concat @ W_O
-        res1 = x + att
-        norm1 = (res1 - res1.mean(dim=1, keepdim=True)) / torch.sqrt(((res1 - res1.mean(dim=1, keepdim=True))**2).mean(dim=1, keepdim=True) + 1e-5)
-        h = torch.where(norm1 @ W1 + B1 > 0, norm1 @ W1 + B1, (norm1 @ W1 + B1) * 0.01)
-        ffn = h @ W2 + B2
-        res2 = norm1 + ffn
-        norm2 = (res2 - res2.mean(dim=1, keepdim=True)) / torch.sqrt(((res2 - res2.mean(dim=1, keepdim=True))**2).mean(dim=1, keepdim=True) + 1e-5)
-        pooled = norm2.mean(dim=0, keepdim=True)
+
+        for lp in layer_params:
+            Q, K, V = curr_x @ lp["W_Q"], curr_x @ lp["W_K"], curr_x @ lp["W_V"]
+            head_outputs = []
+            for h in range(heads):
+                q = Q[:, h * d_head : (h + 1) * d_head]
+                k = K[:, h * d_head : (h + 1) * d_head]
+                v = V[:, h * d_head : (h + 1) * d_head]
+                scores = (q @ k.t()) * (1.0 / math.sqrt(float(dk)))
+                head_outputs.append(torch.softmax(scores, dim=1) @ v)
+
+            concat = torch.cat(head_outputs, dim=1)
+            att = concat @ lp["W_O"]
+            res1 = curr_x + att
+            mean1 = res1.mean(dim=1, keepdim=True)
+            var1 = ((res1 - mean1) ** 2).mean(dim=1, keepdim=True)
+            norm1 = (res1 - mean1) / torch.sqrt(var1 + 1e-5)
+
+            h_ffn = torch.where(
+                norm1 @ lp["W1"] + lp["B1"] > 0,
+                norm1 @ lp["W1"] + lp["B1"],
+                (norm1 @ lp["W1"] + lp["B1"]) * 0.01,
+            )
+            ffn = h_ffn @ lp["W2"] + lp["B2"]
+            res2 = norm1 + ffn
+            mean2 = res2.mean(dim=1, keepdim=True)
+            var2 = ((res2 - mean2) ** 2).mean(dim=1, keepdim=True)
+            curr_x = (res2 - mean2) / torch.sqrt(var2 + 1e-5)
+
+        pooled = curr_x.mean(dim=0, keepdim=True)
         logits = pooled @ classW + classB
         probs = torch.softmax(logits, dim=1)
         loss = -torch.log(torch.clamp(probs[0, true_class], min=1e-7))
         loss.backward()
+
         with torch.no_grad():
-            for p in params:
+            for p in all_params:
                 p -= lr * p.grad
                 p.grad.zero_()
 
@@ -82,7 +107,7 @@ def pytorch_benchmark(warmup=10, iterations=1000):
     return elapsed
 
 
-def build_c_benchmark(tmp_path, warmup, iterations):
+def build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations):
     bench_src = tmp_path / "bench_c.c"
     bench_bin = tmp_path / "bench_c"
 
@@ -96,11 +121,11 @@ def build_c_benchmark(tmp_path, warmup, iterations):
 
 int main() {{
     ModelConfig modelConfig = {{
-        .seqLen = 3,
-        .dModel = 4,
-        .heads = 2,
-        .layers = 1,
-        .dk = 2
+        .seqLen = {seq_len},
+        .dModel = {d_model},
+        .heads = {heads},
+        .layers = {layers},
+        .dk = {dk}
     }};
 
     Tensor *input = tensorCreate(modelConfig.seqLen, modelConfig.dModel);
@@ -166,34 +191,50 @@ def run_c_benchmark(bench_bin):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compare Guerrilla training speed with PyTorch.")
-    parser.add_argument("--warmup", type=int, default=10, help="Warmup iterations before timing each trial.")
-    parser.add_argument("--iterations", type=int, default=2000, help="Timed iterations per trial.")
-    parser.add_argument("--trials", type=int, default=20, help="Number of independent trials to average.")
-    args = parser.parse_args()
+    d_model = 64
+    seq_len = 1024
+    layers = 6
+    heads = 8
+    dk = d_model // heads
+    d_ff = d_model * 4
+    warmup = 2
+    iterations = 10
+    trials = 3
 
     c_times = []
     torch_times = []
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
-        bench_bin = build_c_benchmark(tmp_path, args.warmup, args.iterations)
+        bench_bin = build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations)
 
-        for _ in range(args.trials):
+        for _ in range(trials):
             c_times.append(run_c_benchmark(bench_bin))
-            torch_times.append(pytorch_benchmark(warmup=args.warmup, iterations=args.iterations))
+            torch_times.append(
+                pytorch_benchmark(
+                    d_model=d_model,
+                    seq_len=seq_len,
+                    layers=layers,
+                    heads=heads,
+                    dk=dk,
+                    d_ff=d_ff,
+                    warmup=warmup,
+                    iterations=iterations,
+                )
+            )
 
     c_time = fmean(c_times)
     torch_time = fmean(torch_times)
 
-    c_us_per_step = (c_time / args.iterations) * 1e6
-    torch_us_per_step = (torch_time / args.iterations) * 1e6
+    c_us_per_step = (c_time / iterations) * 1e6
+    torch_us_per_step = (torch_time / iterations) * 1e6
     speedup = torch_time / c_time if c_time > 0 else 0
 
     lines = []
     lines.append(
-        f"Training Step Speed Benchmark ({args.trials} trials, {args.iterations:,} iterations per trial, single-threaded)"
+        f"Training Step Speed Benchmark ({trials} trials, {iterations} iterations per trial, single-threaded)"
     )
+    lines.append(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}")
     lines.append("")
     lines.append(f"C Guerrilla:  {c_time:.4f} sec avg  ({c_us_per_step:.2f} us/step)")
     lines.append(f"PyTorch CPU:  {torch_time:.4f} sec avg  ({torch_us_per_step:.2f} us/step)")

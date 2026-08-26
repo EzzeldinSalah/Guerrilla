@@ -30,17 +30,6 @@ static Tensor *tensorCopyGrad (Tensor *tensor) {
     return copy;
 }
 
-static void multiplyBackwardAData (Tensor *A, Tensor *B, Tensor *dC, Tensor *dA) {
-    for (int i = 0; i < A->rows; i++)
-        for (int j = 0; j < A->cols; j++) {
-            float tempSum = 0.0f;
-            for (int k = 0; k < dC->cols; k++)
-                tempSum += dC->data[i * dC->cols + k] * B->data[j * B->cols + k];
-
-            dA->data[i * dA->cols + j] += tempSum;
-        }
-}
-
 static void tensorSliceBackward (Tensor *tensor, Tensor *sliceGrad, int colStart) {
     for (int i = 0; i < sliceGrad->rows; i++)
         for (int j = 0; j < sliceGrad->cols; j++)

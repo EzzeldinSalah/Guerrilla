@@ -180,6 +180,38 @@ void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC) {
     }
 }
 
+void multiplyBackwardAData (Tensor *A, Tensor *B, Tensor *dC, Tensor *dA) {
+    if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows ||
+        A->rows != dA->rows || A->cols != dA->cols) {
+        printf("multiplyBackwardAData: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d, dA: %dx%d)\n",
+               A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols, dA->rows, dA->cols);
+        return;
+    }
+
+    const int TILE = 32;
+    for (int ii = 0; ii < A->rows; ii += TILE) {
+        for (int jj = 0; jj < A->cols; jj += TILE) {
+            for (int kk = 0; kk < dC->cols; kk += TILE) {
+
+                int iEnd = (ii + TILE < A->rows) ? ii + TILE : A->rows;
+                int jEnd = (jj + TILE < A->cols) ? jj + TILE : A->cols;
+                int kEnd = (kk + TILE < dC->cols) ? kk + TILE : dC->cols;
+
+                for (int i = ii; i < iEnd; i++) {
+                    for (int j = jj; j < jEnd; j++) {
+                        float tempSum = 0.0f;
+                        for (int k = kk; k < kEnd; k++)
+                            tempSum += dC->data[i * dC->cols + k] * B->data[j * B->cols + k];
+
+                        dA->data[i * dA->cols + j] += tempSum;
+                    }
+                }
+
+            }
+        }
+    }
+}
+
 void multiplyBackwardB (Tensor *A, Tensor *B, Tensor *dC) {
     if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
         printf("multiplyBackwardB: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
