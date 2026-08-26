@@ -147,15 +147,7 @@ void softmaxBackward (Tensor *scores, Tensor *A, Tensor *dA) {
 }
 
 
-void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC) {
-    if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
-        printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
-               A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
-        return;
-    }
-
-    if (!A->grad) tensorRequiresGrad(A);
-
+static void matmulBackwardATile (Tensor *A, Tensor *B, Tensor *dC, float *dest) {
     const int TILE = 32;
     for (int ii = 0; ii < A->rows; ii += TILE) {
         for (int jj = 0; jj < A->cols; jj += TILE) {
@@ -171,13 +163,24 @@ void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC) {
                         for (int k = kk; k < kEnd; k++)
                             tempSum += dC->data[i * dC->cols + k] * B->data[j * B->cols + k];
 
-                        A->grad[i * A->cols + j] += tempSum;
+                        dest[i * A->cols + j] += tempSum;
                     }
                 }
 
             }
         }
     }
+}
+
+void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC) {
+    if (A->rows != dC->rows || B->cols != dC->cols || A->cols != B->rows) {
+        printf("multiplyBackwardA: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
+               A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
+        return;
+    }
+
+    if (!A->grad) tensorRequiresGrad(A);
+    matmulBackwardATile(A, B, dC, A->grad);
 }
 
 void multiplyBackwardAData (Tensor *A, Tensor *B, Tensor *dC, Tensor *dA) {
@@ -188,28 +191,7 @@ void multiplyBackwardAData (Tensor *A, Tensor *B, Tensor *dC, Tensor *dA) {
         return;
     }
 
-    const int TILE = 32;
-    for (int ii = 0; ii < A->rows; ii += TILE) {
-        for (int jj = 0; jj < A->cols; jj += TILE) {
-            for (int kk = 0; kk < dC->cols; kk += TILE) {
-
-                int iEnd = (ii + TILE < A->rows) ? ii + TILE : A->rows;
-                int jEnd = (jj + TILE < A->cols) ? jj + TILE : A->cols;
-                int kEnd = (kk + TILE < dC->cols) ? kk + TILE : dC->cols;
-
-                for (int i = ii; i < iEnd; i++) {
-                    for (int j = jj; j < jEnd; j++) {
-                        float tempSum = 0.0f;
-                        for (int k = kk; k < kEnd; k++)
-                            tempSum += dC->data[i * dC->cols + k] * B->data[j * B->cols + k];
-
-                        dA->data[i * dA->cols + j] += tempSum;
-                    }
-                }
-
-            }
-        }
-    }
+    matmulBackwardATile(A, B, dC, dA->data);
 }
 
 void multiplyBackwardB (Tensor *A, Tensor *B, Tensor *dC) {
