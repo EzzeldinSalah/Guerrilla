@@ -250,7 +250,7 @@ int main() {
     c_results = parse_c_results(c_output)
     torch_results = pytorch_results()
 
-    tolerance = 2e-6
+    tolerance = 2e-8
     max_abs = 0.0
     worst_name = ""
     failed = False

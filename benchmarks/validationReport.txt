@@ -14,6 +14,6 @@ W20           C=0.159998655  PyTorch=0.159998655  diff=3.19e-10  ok
 B10           C=-0.080057710  PyTorch=-0.080057710  diff=4.09e-10  ok
 B20           C=0.179864377  PyTorch=0.179864392  diff=1.47e-08  ok
 
-tolerance: 2e-06
+tolerance: 2e-08
 worst drift: classW3 at 1.52e-08
 result: pass
