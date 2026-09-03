@@ -172,6 +172,9 @@ int main() {{
         "-Wall",
         "-O3",
         "-march=native",
+        "-march=armv8-a+simd",
+        "-mcpu=apple-m3",
+        "-ffast-math",
         "-flto",
         "-Iinclude",
         "-Itraining",
@@ -200,6 +203,10 @@ def main():
     warmup = 2
     iterations = 10
     trials = 3
+
+    print(f"Benchmarking Guerrilla Transformer vs PyTorch")
+    print(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}")
+    print("Compiling and running C training loop...")
 
     c_times = []
     torch_times = []
