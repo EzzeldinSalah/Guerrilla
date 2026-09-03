@@ -228,8 +228,6 @@ int main() {{
             "-Wall",
             "-O3",
             "-march=native",
-            "-march=armv8-a+simd",
-            "-mcpu=apple-m3",
             "-ffast-math",
             "-Iinclude",
             "-Itraining",
