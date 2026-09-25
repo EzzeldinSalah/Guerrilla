@@ -176,7 +176,7 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 
 **Optimization:**
 - [x] Cache-friendly matmul via loop reordering
-- [ ] SIMD with ARM NEON intrinsics
+- [x] SIMD with ARM NEON intrinsics
 - [x] Benchmark against PyTorch CPU inference
 
 **Data pipeline:**

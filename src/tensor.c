@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
+#if !defined(FORCE_SCALAR) && defined(__aarch64__) && (defined(__ARM_NEON) || defined(__ARM_NEON__))
+#include <arm_neon.h>
+#endif
 #include "tensor.h"
 
 Tensor *tensorCreate (int rows, int cols) {
@@ -72,7 +75,6 @@ Tensor *addBias (Tensor *matrix, Tensor *bias) {
     return result;
 }
 
-// significantly outperform the prev one (optimized for CPU cache locality) !
 Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 	if (matrix1->cols != matrix2->rows) {
 		printf("To multiply two matrices, matrix1->cols has to equal matrix2->rows\n");
@@ -91,6 +93,48 @@ Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 				int kEnd = (kk + TILE < matrix1->cols) ? kk + TILE : matrix1->cols;
 				int jEnd = (jj + TILE < matrix2->cols) ? jj + TILE : matrix2->cols;
 
+#if !defined(FORCE_SCALAR) && defined(__aarch64__) && (defined(__ARM_NEON) || defined(__ARM_NEON__))
+				int i = ii;
+				for (; i <= iEnd - 4; i += 4) {
+					int j = jj;
+					for (; j <= jEnd - 4; j += 4) {
+						float32x4_t c0 = vld1q_f32(&matrixDot->data[(i + 0) * matrixDot->cols + j]);
+						float32x4_t c1 = vld1q_f32(&matrixDot->data[(i + 1) * matrixDot->cols + j]);
+						float32x4_t c2 = vld1q_f32(&matrixDot->data[(i + 2) * matrixDot->cols + j]);
+						float32x4_t c3 = vld1q_f32(&matrixDot->data[(i + 3) * matrixDot->cols + j]);
+
+						for (int k = kk; k < kEnd; k++) {
+							float32x4_t vb = vld1q_f32(&matrix2->data[k * matrix2->cols + j]);
+							c0 = vfmaq_n_f32(c0, vb, matrix1->data[(i + 0) * matrix1->cols + k]);
+							c1 = vfmaq_n_f32(c1, vb, matrix1->data[(i + 1) * matrix1->cols + k]);
+							c2 = vfmaq_n_f32(c2, vb, matrix1->data[(i + 2) * matrix1->cols + k]);
+							c3 = vfmaq_n_f32(c3, vb, matrix1->data[(i + 3) * matrix1->cols + k]);
+						}
+
+						vst1q_f32(&matrixDot->data[(i + 0) * matrixDot->cols + j], c0);
+						vst1q_f32(&matrixDot->data[(i + 1) * matrixDot->cols + j], c1);
+						vst1q_f32(&matrixDot->data[(i + 2) * matrixDot->cols + j], c2);
+						vst1q_f32(&matrixDot->data[(i + 3) * matrixDot->cols + j], c3);
+					}
+					// Remainder loop for j — not dead code. Only skipped when jEnd - jj is a multiple of 4.
+					for (; j < jEnd; j++) {
+						for (int r_idx = 0; r_idx < 4; r_idx++) {
+							float sum = 0.0f;
+							for (int k = kk; k < kEnd; k++)
+								sum += matrix1->data[(i + r_idx) * matrix1->cols + k] * matrix2->data[k * matrix2->cols + j];
+							matrixDot->data[(i + r_idx) * matrixDot->cols + j] += sum;
+						}
+					}
+				}
+				// Remainder loop for i — not dead code. Only skipped when iEnd - ii is a multiple of 4.
+				for (; i < iEnd; i++) {
+					for (int k = kk; k < kEnd; k++) {
+						float r = matrix1->data[i * matrix1->cols + k];
+						for (int j = jj; j < jEnd; j++)
+							matrixDot->data[i * matrixDot->cols + j] += r * matrix2->data[k * matrix2->cols + j];
+					}
+				}
+#else
 				for (int i = ii; i < iEnd; i++) {
 					for (int k = kk; k < kEnd; k++) {
 						float r = matrix1->data[i * matrix1->cols + k];
@@ -98,6 +142,7 @@ Tensor *multiply (Tensor *matrix1, Tensor *matrix2) {
 							matrixDot->data[i * matrixDot->cols + j] += r * matrix2->data[k * matrix2->cols + j];
 					}
 				}
+#endif
 
 			}
 		}
@@ -129,9 +174,38 @@ Tensor *scale (Tensor *matrix, float scale) {
 Tensor *softmax (Tensor *matrix) {
 	Tensor *activated = tensorCreate(matrix->rows, matrix->cols);
 	
-	float maxVal;
 	for (int i = 0; i < matrix->rows; i++) {
-		maxVal = matrix->data[i * matrix->cols];
+#if !defined(FORCE_SCALAR) && defined(__aarch64__) && (defined(__ARM_NEON) || defined(__ARM_NEON__))
+		float maxVal = matrix->data[i * matrix->cols];
+		float32x4_t vmax = vdupq_n_f32(maxVal);
+		int j = 0;
+		for (; j <= matrix->cols - 4; j += 4) {
+			float32x4_t vx = vld1q_f32(&matrix->data[i * matrix->cols + j]);
+			vmax = vmaxq_f32(vmax, vx);
+		}
+		maxVal = vmaxvq_f32(vmax);
+		// Remainder loop — not dead code. Only skipped when matrix->cols is a multiple of 4.
+		for (; j < matrix->cols; j++)
+			if (matrix->data[i * matrix->cols + j] > maxVal) maxVal = matrix->data[i * matrix->cols + j];
+
+		float dominator = 0.0f;
+		for (j = 0; j < matrix->cols; j++) {
+			float e = (float)exp(matrix->data[i * matrix->cols + j] - maxVal);
+			activated->data[i * activated->cols + j] = e;
+			dominator += e;
+		}
+
+		float invDominator = 1.0f / dominator;
+		float32x4_t vinv = vdupq_n_f32(invDominator);
+		j = 0;
+		for (; j <= matrix->cols - 4; j += 4) {
+			float32x4_t ve = vld1q_f32(&activated->data[i * activated->cols + j]);
+			vst1q_f32(&activated->data[i * activated->cols + j], vmulq_f32(ve, vinv));
+		}
+		for (; j < matrix->cols; j++)
+			activated->data[i * activated->cols + j] *= invDominator;
+#else
+		float maxVal = matrix->data[i * matrix->cols];
 		for (int j = 0; j < matrix->cols; j++)
 			if (matrix->data[i * matrix->cols + j] > maxVal) maxVal = matrix->data[i * matrix->cols + j];
 		
@@ -141,6 +215,7 @@ Tensor *softmax (Tensor *matrix) {
 
 		for (int j = 0; j < matrix->cols; j++)
 			activated->data[i * activated->cols + j] = exp(matrix->data[i * matrix->cols + j] - maxVal) / dominator;
+#endif
 	}
 	
 	return activated;
@@ -149,11 +224,28 @@ Tensor *softmax (Tensor *matrix) {
 Tensor *leakyRelu (Tensor *matrix, float alpha) {
 	Tensor *activated = tensorCreate(matrix->rows, matrix->cols);
 
-	for (int i = 0; i < matrix->rows; i++)
+	for (int i = 0; i < matrix->rows; i++) {
+#if !defined(FORCE_SCALAR) && defined(__aarch64__) && (defined(__ARM_NEON) || defined(__ARM_NEON__))
+		int j = 0;
+		for (; j <= matrix->cols - 4; j += 4) {
+			float32x4_t vx = vld1q_f32(&matrix->data[i * matrix->cols + j]);
+			float32x4_t vscaled = vmulq_n_f32(vx, alpha);
+			float32x4_t vout = vmaxq_f32(vx, vscaled);
+			vst1q_f32(&activated->data[i * activated->cols + j], vout);
+		}
+		/* Remainder loop (not dead code): only skipped when the dimension is a multiple of 4 
+		(true for current D_MODEL/d_ff, not guaranteed generally) */
+		for (; j < matrix->cols; j++) {
+			float value = matrix->data[i * matrix->cols + j];
+			activated->data[i * activated->cols + j] = value > 0 ? value : alpha * value;
+		}
+#else
 		for (int j = 0; j < matrix->cols; j++) {
 			float value = matrix->data[i * matrix->cols + j];
 			activated->data[i * activated->cols + j] = value > 0 ? value : alpha * value;
 		}
+#endif
+	}
 
 	return activated;
 }

@@ -1,0 +1,5 @@
+KERNEL multiply 658.80
+KERNEL multiplyBackwardA 769.54
+KERNEL multiplyBackwardB 233.75
+KERNEL layerNorm_fwd_bwd 258.14
+KERNEL leakyRelu_fwd_bwd 26.00

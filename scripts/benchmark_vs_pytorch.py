@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import math
 import os
 import subprocess
@@ -107,7 +106,8 @@ def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=2, itera
     return elapsed
 
 
-def build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations):
+def build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations, extra_flags=None):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     bench_src = tmp_path / "bench_c.c"
     bench_bin = tmp_path / "bench_c"
 
@@ -167,17 +167,16 @@ int main() {{
     ]
 
     cc = os.environ.get("CC", "gcc")
+    extra = extra_flags or []
     cmd = [
         cc,
         "-Wall",
         "-O3",
         "-march=native",
-        "-march=armv8-a+simd",
-        "-mcpu=apple-m3",
-        "-ffast-math",
         "-flto",
         "-Iinclude",
         "-Itraining",
+        *extra,
         *sources,
         "-o",
         str(bench_bin),
@@ -194,6 +193,10 @@ def run_c_benchmark(bench_bin):
 
 
 def main():
+    import sys
+    run_scalar = "--scalar" in sys.argv or "--all" in sys.argv
+    run_all = "--all" in sys.argv
+
     d_model = 64
     seq_len = 1024
     layers = 6
@@ -206,17 +209,24 @@ def main():
 
     print(f"Benchmarking Guerrilla Transformer vs PyTorch")
     print(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}")
-    print("Compiling and running C training loop...")
+    print("Compiling and running C training loop ...")
 
     c_times = []
+    scalar_times = []
     torch_times = []
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         bench_bin = build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations)
 
+        scalar_bin = None
+        if run_scalar:
+            scalar_bin = build_c_benchmark(tmp_path / "scalar", d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations, extra_flags=["-DFORCE_SCALAR"])
+
         for _ in range(trials):
             c_times.append(run_c_benchmark(bench_bin))
+            if scalar_bin:
+                scalar_times.append(run_c_benchmark(scalar_bin))
             torch_times.append(
                 pytorch_benchmark(
                     d_model=d_model,
@@ -244,6 +254,11 @@ def main():
     lines.append(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}")
     lines.append("")
     lines.append(f"C Guerrilla:  {c_time:.4f} sec avg  ({c_us_per_step:.2f} us/step)")
+    if scalar_times:
+        s_time = fmean(scalar_times)
+        s_us_per_step = (s_time / iterations) * 1e6
+        neon_speedup = s_time / c_time if c_time > 0 else 0
+        lines.append(f"C Scalar:     {s_time:.4f} sec avg  ({s_us_per_step:.2f} us/step)  [{neon_speedup:.2f}x NEON speedup]")
     lines.append(f"PyTorch CPU:  {torch_time:.4f} sec avg  ({torch_us_per_step:.2f} us/step)")
     lines.append("")
     if speedup >= 1.0:
