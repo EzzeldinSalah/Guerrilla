@@ -16,6 +16,7 @@ except Exception as exc:
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "benchmarks" / "speedReport.txt"
+BUILD_FLAGS = (ROOT / ".buildflags").read_text().split()
 
 
 def run(cmd):
@@ -170,10 +171,7 @@ int main() {{
     extra = extra_flags or []
     cmd = [
         cc,
-        "-Wall",
-        "-O3",
-        "-march=native",
-        "-flto",
+        *BUILD_FLAGS,
         "-Iinclude",
         "-Itraining",
         *extra,

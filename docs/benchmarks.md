@@ -32,5 +32,6 @@ If you want to compare larger tensor shapes, adjust the benchmark script first a
 
 ## Outputs
 
-- `benchmarks/speed_report.txt` stores the latest speed comparison.
-- `benchmarks/validation_report.txt` stores the latest validation output.
+- `benchmarks/speedReport.txt` stores the latest speed comparison.
+- `benchmarks/validationReport.txt` stores the latest validation output.
+- `benchmarks/adam_drift_report.txt` stores the latest Adam drift validation output.

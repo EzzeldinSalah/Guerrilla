@@ -3,7 +3,7 @@ SRC_DIR = src
 TRAINING_DIR = training
 TEST_DIR = tests
 
-CFLAGS = -Wall -O3 -march=native -flto -Iinclude -I$(TRAINING_DIR) -I$(TEST_DIR)
+CFLAGS = $(shell cat .buildflags) -Iinclude -I$(TRAINING_DIR) -I$(TEST_DIR)
 LIBS = -lm
 
 SRCS = $(wildcard $(SRC_DIR)/*.c) \
@@ -35,14 +35,9 @@ bench:
 bench-all:
 	@if [ -f .venv/bin/python3 ]; then .venv/bin/python3 scripts/benchmark_vs_pytorch.py --all; elif command -v python >/dev/null 2>&1; then python scripts/benchmark_vs_pytorch.py --all; else python3 scripts/benchmark_vs_pytorch.py --all; fi
 
-kernelbench:
-	@$(CC) $(CFLAGS) benchmarks/kernelBench.c src/tensor.c training/tensorGrad.c -o kernel_bench $(LIBS)
-	@./kernel_bench
-	@rm -f kernel_bench
-
 clean:
-	rm -f $(TARGET) kernel_bench
+	rm -f $(TARGET)
 	rm -rf $(BUILD_DIR)
 	rm -rf *.dSYM *.o
 
-.PHONY: all validate validate-scalar validate-drift validate-drift-scalar bench bench-all kernelbench clean
+.PHONY: all validate validate-scalar validate-drift validate-drift-scalar bench bench-all clean

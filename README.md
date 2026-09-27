@@ -44,8 +44,7 @@ Guerrilla/
 │   ├── how-did-i.md
 │   └── math.md
 ├── benchmarks/
-│   ├── matmulBench.c
-│   ├── speed_report.txt
+│   ├── speedReport.txt
 │   └── validationReport.txt
 ├── data/
 ├── weights/
