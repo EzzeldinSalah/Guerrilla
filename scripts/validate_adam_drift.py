@@ -138,7 +138,7 @@ def main():
     lr = 0.01
     tolerance = 1e-4
 
-    print(f"Gate B: Validating 200-step Adam cumulative drift vs PyTorch (tolerance {tolerance})")
+    print(f"Gate B: Validating {num_steps} Adam cumulative drift vs PyTorch (tolerance {tolerance})")
     print(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}, lr={lr}")
     print("Compiling and running C training loop...")
 

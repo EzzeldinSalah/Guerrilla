@@ -37,7 +37,6 @@ bench-all:
 
 clean:
 	rm -f $(TARGET)
-	rm -rf $(BUILD_DIR)
 	rm -rf *.dSYM *.o
 
 .PHONY: all validate validate-scalar validate-drift validate-drift-scalar bench bench-all clean
