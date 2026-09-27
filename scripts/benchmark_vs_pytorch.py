@@ -1,4 +1,3 @@
-import argparse
 import math
 import os
 import subprocess
@@ -11,19 +10,20 @@ from statistics import fmean
 try:
     import torch
 except Exception as exc:
-    print("PyTorch is required for benchmark: .venv/bin/python3 -m pip install torch")
+    print("PyTorch is required for benchmark: python3 -m pip install torch")
     sys.exit(2)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "benchmarks" / "speedReport.txt"
+BUILD_FLAGS = (ROOT / ".buildflags").read_text().split()
 
 
 def run(cmd):
     return subprocess.run(cmd, cwd=ROOT, check=True, text=True, capture_output=True)
 
 
-def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=5, iterations=50):
+def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=2, iterations=10):
     torch.manual_seed(0)
     torch.set_num_threads(1)
 
@@ -107,7 +107,8 @@ def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=5, itera
     return elapsed
 
 
-def build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations):
+def build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations, extra_flags=None):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     bench_src = tmp_path / "bench_c.c"
     bench_bin = tmp_path / "bench_c"
 
@@ -167,14 +168,13 @@ int main() {{
     ]
 
     cc = os.environ.get("CC", "gcc")
+    extra = extra_flags or []
     cmd = [
         cc,
-        "-Wall",
-        "-O3",
-        "-march=native",
-        "-flto",
+        *BUILD_FLAGS,
         "-Iinclude",
         "-Itraining",
+        *extra,
         *sources,
         "-o",
         str(bench_bin),
@@ -191,47 +191,40 @@ def run_c_benchmark(bench_bin):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compare Guerrilla training speed with PyTorch.")
-    parser.add_argument("--d_model", type=int, default=4, help="Embedding dimension d_model.")
-    parser.add_argument("--seq_len", type=int, default=3, help="Sequence length seq_len.")
-    parser.add_argument("--layers", type=int, default=1, help="Number of encoder layers.")
-    parser.add_argument("--heads", type=int, default=2, help="Number of attention heads.")
-    parser.add_argument("--warmup", type=int, default=10, help="Warmup iterations per trial.")
-    parser.add_argument("--iterations", type=int, default=2000, help="Timed iterations per trial.")
-    parser.add_argument("--trials", type=int, default=20, help="Number of independent trials.")
-    parser.add_argument("--target-scale", action="store_true", help="Run at target dimensions (d_model=64, seq_len=1024, layers=6).")
-    args = parser.parse_args()
+    import sys
+    run_scalar = "--scalar" in sys.argv or "--all" in sys.argv
+    run_all = "--all" in sys.argv
 
-    if args.target_scale:
-        d_model = 64
-        seq_len = 1024
-        layers = 6
-        heads = 8
-        dk = d_model // heads
-        d_ff = d_model * 4
-        warmup = 2
-        iterations = 10
-        trials = 3
-    else:
-        d_model = args.d_model
-        seq_len = args.seq_len
-        layers = args.layers
-        heads = args.heads
-        dk = d_model // heads
-        d_ff = d_model * 4
-        warmup = args.warmup
-        iterations = args.iterations
-        trials = args.trials
+    d_model = 64
+    seq_len = 1024
+    layers = 6
+    heads = 8
+    dk = d_model // heads
+    d_ff = d_model * 4
+    warmup = 2
+    iterations = 10
+    trials = 3
+
+    print(f"Benchmarking Guerrilla Transformer vs PyTorch")
+    print(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}")
+    print("Compiling and running C training loop ...")
 
     c_times = []
+    scalar_times = []
     torch_times = []
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         bench_bin = build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations)
 
+        scalar_bin = None
+        if run_scalar:
+            scalar_bin = build_c_benchmark(tmp_path / "scalar", d_model, seq_len, layers, heads, dk, d_ff, warmup, iterations, extra_flags=["-DFORCE_SCALAR"])
+
         for _ in range(trials):
             c_times.append(run_c_benchmark(bench_bin))
+            if scalar_bin:
+                scalar_times.append(run_c_benchmark(scalar_bin))
             torch_times.append(
                 pytorch_benchmark(
                     d_model=d_model,
@@ -254,11 +247,16 @@ def main():
 
     lines = []
     lines.append(
-        f"Training Step Speed Benchmark ({trials} trials, {iterations:,} iterations per trial, single-threaded)"
+        f"Training Step Speed Benchmark ({trials} trials, {iterations} iterations per trial, single-threaded)"
     )
     lines.append(f"Config: d_model={d_model}, seq_len={seq_len}, layers={layers}, heads={heads}")
     lines.append("")
     lines.append(f"C Guerrilla:  {c_time:.4f} sec avg  ({c_us_per_step:.2f} us/step)")
+    if scalar_times:
+        s_time = fmean(scalar_times)
+        s_us_per_step = (s_time / iterations) * 1e6
+        neon_speedup = s_time / c_time if c_time > 0 else 0
+        lines.append(f"C Scalar:     {s_time:.4f} sec avg  ({s_us_per_step:.2f} us/step)  [{neon_speedup:.2f}x NEON speedup]")
     lines.append(f"PyTorch CPU:  {torch_time:.4f} sec avg  ({torch_us_per_step:.2f} us/step)")
     lines.append("")
     if speedup >= 1.0:

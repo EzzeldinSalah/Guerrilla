@@ -15,8 +15,9 @@ build/
 *.so
 *.dylib
 
-*.dSYM/
+*.dSYM
 guerrilla
+kernel_bench
 
 data/*
 weights/*

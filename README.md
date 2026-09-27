@@ -44,8 +44,7 @@ Guerrilla/
 │   ├── how-did-i.md
 │   └── math.md
 ├── benchmarks/
-│   ├── matmulBench.c
-│   ├── speed_report.txt
+│   ├── speedReport.txt
 │   └── validationReport.txt
 ├── data/
 ├── weights/
@@ -175,8 +174,8 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 - [x] The C model should get close. If it does not, something is wrong with the math.
 
 **Optimization:**
-- [ ] Cache-friendly matmul via loop reordering
-- [ ] SIMD with ARM NEON intrinsics
+- [x] Cache-friendly matmul via loop reordering
+- [x] SIMD with ARM NEON intrinsics
 - [x] Benchmark against PyTorch CPU inference
 
 **Data pipeline:**
@@ -192,4 +191,4 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 
 ---
 
-*"Guerrilla is built on understanding the machine. Infinite freedom begins where abstractions end."*
+*"Infinite Freedom Begins Where Abstractions End"*

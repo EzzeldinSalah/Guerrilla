@@ -8,13 +8,13 @@ from pathlib import Path
 try:
     import torch
 except Exception as exc:
-    print("PyTorch is required for validation: python3 -m pip install torch")
     print(f"import error: {exc}")
     sys.exit(2)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "benchmarks" / "validationReport.txt"
+BUILD_FLAGS = (ROOT / ".buildflags").read_text().split()
 
 
 def run(cmd):
@@ -230,14 +230,18 @@ int main() {
             "training/trainLoop.c",
         ]
 
+        import sys
+        extra_cflags = os.environ.get("EXTRA_CFLAGS", "").split()
+        if "--scalar" in sys.argv:
+            extra_cflags.append("-DFORCE_SCALAR")
+
         cc = os.environ.get("CC", "gcc")
         cmd = [
             cc,
-            "-Wall",
-            "-O3",
-            "-march=native",
+            *BUILD_FLAGS,
             "-Iinclude",
             "-Itraining",
+            *extra_cflags,
             *sources,
             "-o",
             str(validator_bin),
