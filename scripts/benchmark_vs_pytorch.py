@@ -23,35 +23,48 @@ def run(cmd):
     return subprocess.run(cmd, cwd=ROOT, check=True, text=True, capture_output=True)
 
 
+def fill_pattern(shape, seed):
+    total = 1
+    for dim in shape:
+        total *= dim
+
+    data = []
+    for i in range(total):
+        value = (((i + 1) * seed) + seed * seed + (i % 3)) % 23
+        data.append((float(value) - 11.0) * 0.02)
+
+    return torch.tensor(data, dtype=torch.float32).reshape(shape)
+
+
 def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=2, iterations=10):
-    torch.manual_seed(0)
     torch.set_num_threads(1)
 
     true_class = 1
     lr = 0.01
 
     layer_params = []
-    for _ in range(layers):
+    for i in range(layers):
+        seed = 10 + i * 20
         p = {
-            "W_Q": torch.randn(d_model, d_model, requires_grad=True),
-            "W_K": torch.randn(d_model, d_model, requires_grad=True),
-            "W_V": torch.randn(d_model, d_model, requires_grad=True),
-            "W_O": torch.randn(d_model, d_model, requires_grad=True),
-            "W1": torch.randn(d_model, d_ff, requires_grad=True),
-            "W2": torch.randn(d_ff, d_model, requires_grad=True),
-            "B1": torch.randn(1, d_ff, requires_grad=True),
-            "B2": torch.randn(1, d_model, requires_grad=True),
+            "W_Q": fill_pattern((d_model, d_model), seed + 1).requires_grad_(),
+            "W_K": fill_pattern((d_model, d_model), seed + 2).requires_grad_(),
+            "W_V": fill_pattern((d_model, d_model), seed + 3).requires_grad_(),
+            "W_O": fill_pattern((d_model, d_model), seed + 4).requires_grad_(),
+            "W1": fill_pattern((d_model, d_ff), seed + 5).requires_grad_(),
+            "W2": fill_pattern((d_ff, d_model), seed + 6).requires_grad_(),
+            "B1": fill_pattern((1, d_ff), seed + 7).requires_grad_(),
+            "B2": fill_pattern((1, d_model), seed + 8).requires_grad_(),
         }
         layer_params.append(p)
 
-    classW = torch.randn(d_model, 2, requires_grad=True)
-    classB = torch.randn(1, 2, requires_grad=True)
+    classW = fill_pattern((d_model, 2), 101).requires_grad_()
+    classB = fill_pattern((1, 2), 102).requires_grad_()
 
     all_params = [classW, classB]
     for lp in layer_params:
         all_params.extend(lp.values())
 
-    x = torch.randn(seq_len, d_model)
+    x = fill_pattern((seq_len, d_model), 3)
 
     def step():
         curr_x = x
@@ -74,11 +87,8 @@ def pytorch_benchmark(d_model, seq_len, layers, heads, dk, d_ff, warmup=2, itera
             var1 = ((res1 - mean1) ** 2).mean(dim=1, keepdim=True)
             norm1 = (res1 - mean1) / torch.sqrt(var1 + 1e-5)
 
-            h_ffn = torch.where(
-                norm1 @ lp["W1"] + lp["B1"] > 0,
-                norm1 @ lp["W1"] + lp["B1"],
-                (norm1 @ lp["W1"] + lp["B1"]) * 0.01,
-            )
+            pre = norm1 @ lp["W1"] + lp["B1"]
+            h_ffn = torch.where(pre > 0, pre, pre * 0.01)
             ffn = h_ffn @ lp["W2"] + lp["B2"]
             res2 = norm1 + ffn
             mean2 = res2.mean(dim=1, keepdim=True)
@@ -120,6 +130,30 @@ def build_c_benchmark(tmp_path, d_model, seq_len, layers, heads, dk, d_ff, warmu
 #include "encoder.h"
 #include "trainLoop.h"
 
+static void fillPattern (Tensor *tensor, int seed) {{
+    int totalSize = tensor->rows * tensor->cols;
+    for (int i = 0; i < totalSize; i++) {{
+        int value = (((i + 1) * seed) + seed * seed + (i % 3)) % 23;
+        tensor->data[i] = ((float)value - 11.0f) * 0.02f;
+    }}
+}}
+
+static void fillTransformerPattern (Transformer *transformer, ModelConfig *modelConfig) {{
+    for (int i = 0; i < modelConfig->layers; i++) {{
+        int seed = 10 + i * 20;
+        fillPattern(transformer->layers[i].W_Q, seed + 1);
+        fillPattern(transformer->layers[i].W_K, seed + 2);
+        fillPattern(transformer->layers[i].W_V, seed + 3);
+        fillPattern(transformer->layers[i].W_O, seed + 4);
+        fillPattern(transformer->layers[i].W1, seed + 5);
+        fillPattern(transformer->layers[i].W2, seed + 6);
+        fillPattern(transformer->layers[i].B1, seed + 7);
+        fillPattern(transformer->layers[i].B2, seed + 8);
+    }}
+    fillPattern(transformer->classW, 101);
+    fillPattern(transformer->classB, 102);
+}}
+
 int main() {{
     ModelConfig modelConfig = {{
         .seqLen = {seq_len},
@@ -131,6 +165,8 @@ int main() {{
 
     Tensor *input = tensorCreate(modelConfig.seqLen, modelConfig.dModel);
     Transformer *transformer = transformerCreate(&modelConfig);
+    fillPattern(input, 3);
+    fillTransformerPattern(transformer, &modelConfig);
 
     for (int i = 0; i < {warmup}; i++) {{
         trainSgd(transformer, input, 1, &modelConfig, 0.01f);
@@ -191,9 +227,7 @@ def run_c_benchmark(bench_bin):
 
 
 def main():
-    import sys
     run_scalar = "--scalar" in sys.argv or "--all" in sys.argv
-    run_all = "--all" in sys.argv
 
     d_model = 64
     seq_len = 1024

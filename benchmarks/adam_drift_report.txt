@@ -2,7 +2,7 @@ Gate B: C Model vs PyTorch (200 Adam Steps @ Real Scale: d_model=64, seq_len=102
 
 Step      C Loss          PyTorch Loss    Loss Diff     Status
 --------------------------------------------------------------
-0         0.175603271     0.175602272     9.99e-07      ok
+0         0.175602913     0.175602272     6.41e-07      ok
 9         0.000000477     0.000000477     1.63e-10      ok
 19        0.000000238     0.000000238     4.19e-10      ok
 24        0.000000238     0.000000238     4.19e-10      ok
@@ -26,5 +26,5 @@ Step      C Loss          PyTorch Loss    Loss Diff     Status
 199       0.000000119     0.000000119     2.09e-10      ok
 
 tolerance: 1.00e-04
-worst drift: step 0 at 9.99e-07
+worst drift: step 0 at 6.41e-07
 result: pass

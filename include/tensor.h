@@ -17,7 +17,6 @@ Tensor *transpose (Tensor *matrix);
 Tensor *scale (Tensor *matrix, float scale);
 Tensor *softmax (Tensor *matrix);
 Tensor *leakyRelu (Tensor *matrix, float alpha);
-Tensor *relu (Tensor *matrix);
 Tensor *layerNormalization (Tensor *matrix);
 void tensorPrint (Tensor *matrix);
 void tensorRequiresGrad (Tensor *tensor);

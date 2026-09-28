@@ -37,17 +37,17 @@ Guerrilla/
 │   └── tests.h
 ├── scripts/
 │   ├── benchmark_vs_pytorch.py
+│   ├── validate_adam_drift.py
 │   └── validate_against_pytorch.py
 ├── docs/
 │   ├── benchmarks.md
 │   ├── contributing.md
-│   ├── how-did-i.md
 │   └── math.md
 ├── benchmarks/
+│   ├── adam_drift_report.txt
 │   ├── speedReport.txt
 │   └── validationReport.txt
-├── data/
-├── weights/
+├── .buildflags
 ├── Makefile
 ├── requirements.txt
 └── README.md
@@ -156,7 +156,7 @@ Welcome. If you want to learn and build a transformer in pure C, this is the rig
 - [x] Stack N encoder blocks
 - [x] Classification head = linear + softmax
 
-**Backward pass and training (all in C):**
+**Backward pass and training:**
 - [x] Gradient storage on every tensor
 - [x] multiply backward = dA = dC x Bt, dB = At x dC
 - [x] add, scale, ReLU, and leaky ReLU backward
