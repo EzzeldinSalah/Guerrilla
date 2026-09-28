@@ -5,68 +5,6 @@
 #endif
 #include "tensorGrad.h"
 
-void addBackward (Tensor *A, Tensor *B, Tensor *dC) {
-    if (A->rows != B->rows || A->cols != B->cols ||
-        A->rows != dC->rows || A->cols != dC->cols) {
-        printf("addBackward: shape mismatch (A: %dx%d, B: %dx%d, dC: %dx%d)\n",
-               A->rows, A->cols, B->rows, B->cols, dC->rows, dC->cols);
-
-        return;
-    }
-
-    if (!A->grad) tensorRequiresGrad(A);
-    if (!B->grad) tensorRequiresGrad(B);
-
-    int totalSize = A->rows * A->cols;
-    for (int i = 0; i < totalSize; i++)
-        A->grad[i] += dC->data[i], B->grad[i] += dC->data[i];
-}
-
-void transposeBackward (Tensor *A, Tensor *dC) {
-    if (A->rows != dC->cols || A->cols != dC->rows) {
-        printf("transposeBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
-               A->rows, A->cols, dC->rows, dC->cols);
-
-        return;
-    }
-
-    if (!A->grad) tensorRequiresGrad(A);
-
-    for (int i = 0; i < A->rows; i++)
-        for (int j = 0; j < A->cols; j++)
-            A->grad[i * A->cols + j] += dC->data[j * dC->cols + i];
-}
-
-void scaleBackward (Tensor *A, Tensor *dC, float scale) {
-    if (A->rows != dC->rows || A->cols != dC->cols) {
-        printf("scaleBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
-               A->rows, A->cols, dC->rows, dC->cols);
-
-        return;
-    }
-
-    if (!A->grad) tensorRequiresGrad(A);
-
-    int totalSize = A->rows * A->cols;
-    for (int i = 0; i < totalSize; i++)
-        A->grad[i] += dC->data[i] * scale;
-}
-
-void reluBackward (Tensor *A, Tensor *dC) {
-    if (A->rows != dC->rows || A->cols != dC->cols) {
-        printf("reluBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",
-               A->rows, A->cols, dC->rows, dC->cols);
-
-        return;
-    }
-
-    if (!A->grad) tensorRequiresGrad(A);
-
-    int totalSize = A->rows * A->cols;
-    for (int i = 0; i < totalSize; i++)
-        A->grad[i] += A->data[i] > 0 ? dC->data[i] : 0.0f;
-}
-
 void leakyReluBackward (Tensor *A, Tensor *dC, float alpha) {
     if (A->rows != dC->rows || A->cols != dC->cols) {
         printf("leakyReluBackward: shape mismatch (A: %dx%d, dC: %dx%d)\n",

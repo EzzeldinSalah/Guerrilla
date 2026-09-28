@@ -24,7 +24,7 @@ Tensor* tensorSlice (Tensor *tensor, int colStart, int colEnd) {
     return slice;
 }
 
-Tensor *attention (Tensor *query, Tensor *key, Tensor *value, int dk) {
+static Tensor *attention (Tensor *query, Tensor *key, Tensor *value, int dk) {
     Tensor *kt = transpose(key);
     Tensor *E = multiply(query, kt);
     tensorFree(kt);
@@ -60,9 +60,6 @@ Tensor **multiHeadAttention (Tensor *query, Tensor *key, Tensor *value, ModelCon
 
 Tensor *tensorConcat (Tensor **heads, ModelConfig *modelConfig) {
     if (!heads[0]) {
-        for (int h = 0; h < modelConfig->heads; h++)
-            tensorFree(heads[h]);
-        free(heads);
         return NULL;
     }
     

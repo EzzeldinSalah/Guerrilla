@@ -37,17 +37,17 @@ Guerrilla/
 │   └── tests.h
 ├── scripts/
 │   ├── benchmark_vs_pytorch.py
+│   ├── validate_adam_drift.py
 │   └── validate_against_pytorch.py
 ├── docs/
 │   ├── benchmarks.md
 │   ├── contributing.md
-│   ├── how-did-i.md
 │   └── math.md
 ├── benchmarks/
+│   ├── adam_drift_report.txt
 │   ├── speedReport.txt
 │   └── validationReport.txt
-├── data/
-├── weights/
+├── .buildflags
 ├── Makefile
 ├── requirements.txt
 └── README.md

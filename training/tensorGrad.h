@@ -1,10 +1,6 @@
 #pragma once
 #include "tensor.h"
 
-void addBackward (Tensor *A, Tensor *B, Tensor *dC);
-void transposeBackward (Tensor *A, Tensor *dC);
-void scaleBackward (Tensor *A, Tensor *dC, float scale);
-void reluBackward (Tensor *A, Tensor *dC);
 void leakyReluBackward (Tensor *A, Tensor *dC, float alpha);
 void multiplyBackwardA (Tensor *A, Tensor *B, Tensor *dC);
 void multiplyBackwardAData (Tensor *A, Tensor *B, Tensor *dC, Tensor *dA);

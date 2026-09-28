@@ -2,10 +2,7 @@
 #include <stdlib.h>
 
 #include "tensor.h"
-#include "attention.h"
 #include "encoder.h"
-#include "../training/lossFunctions.h"
-#include "../training/tensorGrad.h"
 #include "tests.h"
 
 extern ModelConfig modelConfig;

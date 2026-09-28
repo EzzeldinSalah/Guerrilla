@@ -9,12 +9,15 @@ LIBS = -lm
 SRCS = $(wildcard $(SRC_DIR)/*.c) \
        $(wildcard $(TRAINING_DIR)/*.c) \
        $(wildcard $(TEST_DIR)/*.c)
+HEADERS = $(wildcard include/*.h) \
+	   $(wildcard $(TRAINING_DIR)/*.h) \
+	   $(wildcard $(TEST_DIR)/*.h)
 
 TARGET = guerrilla
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS)
+$(TARGET): $(SRCS) $(HEADERS) .buildflags
 	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET) $(LIBS)
 
 validate:

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "tensor.h"
-#include "attention.h"
 #include "../training/attentionGrad.h"
 #include "encoder.h"
 #include "../training/encoderGrad.h"

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <limits.h>
 #if !defined(FORCE_SCALAR) && defined(__aarch64__) && (defined(__ARM_NEON) || defined(__ARM_NEON__))
 #include <arm_neon.h>
 #endif
@@ -247,17 +246,6 @@ Tensor *leakyRelu (Tensor *matrix, float alpha) {
 #endif
 	}
 
-	return activated;
-}
-
-Tensor *relu (Tensor *matrix) {
-	Tensor *activated = tensorCreate(matrix->rows, matrix->cols);
-
-	for (int i = 0; i < matrix->rows; i++)
-		for (int j = 0; j < matrix->cols; j++) 
-			activated->data[i * activated->cols + j] = matrix->data[i * matrix->cols + j] > 0 ?
-				matrix->data[i * matrix->cols + j] : 0;
-		
 	return activated;
 }
 

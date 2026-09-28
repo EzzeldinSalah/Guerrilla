@@ -103,11 +103,8 @@ def pytorch_results(seq_len=1024, d_model=64, heads=8, layers=6, num_steps=200, 
             var1 = ((res1 - mean1) ** 2).mean(dim=1, keepdim=True)
             norm1 = (res1 - mean1) / torch.sqrt(var1 + 1e-5)
 
-            h_ffn = torch.where(
-                norm1 @ lp["W1"] + lp["B1"] > 0,
-                norm1 @ lp["W1"] + lp["B1"],
-                (norm1 @ lp["W1"] + lp["B1"]) * 0.01,
-            )
+            pre = norm1 @ lp["W1"] + lp["B1"]
+            h_ffn = torch.where(pre > 0, pre, pre * 0.01)
             ffn = h_ffn @ lp["W2"] + lp["B2"]
             res2 = norm1 + ffn
             mean2 = res2.mean(dim=1, keepdim=True)
@@ -223,7 +220,6 @@ int main() {{
             "training/trainLoop.c",
         ]
 
-        import sys
         extra_cflags = os.environ.get("EXTRA_CFLAGS", "").split()
         if "--scalar" in sys.argv:
             extra_cflags.append("-DFORCE_SCALAR")
